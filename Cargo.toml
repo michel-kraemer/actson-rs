@@ -1,0 +1,8 @@
+[package]
+name = "actson-rs"
+version = "0.1.0"
+authors = ["Michel Kraemer <michel@undercouch.de>"]
+description = "A reactive (or non-blocking, or asynchronous) JSON parser"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/michel-kraemer/actson-rs"
