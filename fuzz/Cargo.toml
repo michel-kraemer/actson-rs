@@ -1,0 +1,11 @@
+[package]
+name = "actson-fuzz"
+version = "0.1.0"
+authors = ["Michel Kraemer <michel@undercouch.de>"]
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+actson = { path = ".." }
+afl = "0.13.1"
