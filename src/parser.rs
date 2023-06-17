@@ -149,41 +149,6 @@ const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
 
 /// A non-blocking, event-based JSON parser.
-///
-/// # Example
-///
-/// ```
-/// use actson::{JsonParser, JsonEvent};
-/// use actson::feeder::{DefaultJsonFeeder, JsonFeeder};
-///
-/// let json = r#"{"name": "Elvis"}"#;
-///
-/// let mut feeder = DefaultJsonFeeder::new();
-/// let mut parser = JsonParser::new();
-/// let mut i: usize = 0;
-/// loop {
-///     // feed as many bytes as possible to the parser
-///     let mut event = parser.next_event(&mut feeder);
-///     while matches!(event, JsonEvent::NeedMoreInput) {
-///         i += feeder.feed_bytes(&json.as_bytes()[i..]);
-///         if i == json.len() {
-///             feeder.done();
-///         }
-///         event = parser.next_event(&mut feeder);
-///     }
-///
-///     // do something useful with `event`
-///
-///     if matches!(event, JsonEvent::Error) {
-///        // do proper error handling here!
-///        panic!("Error while parsing JSON");
-///     }
-///
-///     if matches!(event, JsonEvent::Eof) {
-///         break;
-///     }
-/// }
-/// ```
 pub struct JsonParser {
     /// The stack containing the current modes
     stack: Vec<i8>,
