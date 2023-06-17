@@ -188,6 +188,9 @@ pub struct JsonParser {
     /// The stack containing the current modes
     stack: Vec<i8>,
 
+    /// The maximum number of modes on the stack
+    depth: usize,
+
     /// The current state
     state: i8,
 
@@ -206,11 +209,31 @@ impl JsonParser {
     pub fn new() -> Self {
         JsonParser {
             stack: vec![MODE_DONE],
+            depth: 2048,
             state: GO,
             current_buffer: vec![],
             event1: JsonEvent::NeedMoreInput,
             event2: JsonEvent::NeedMoreInput,
         }
+    }
+
+    pub fn new_with_max_depth(max_depth: usize) -> Self {
+        JsonParser {
+            stack: vec![MODE_DONE],
+            depth: max_depth,
+            state: GO,
+            current_buffer: vec![],
+            event1: JsonEvent::NeedMoreInput,
+            event2: JsonEvent::NeedMoreInput,
+        }
+    }
+
+    fn push(&mut self, mode: i8) -> bool {
+        if self.stack.len() >= self.depth {
+            return false;
+        }
+        self.stack.push(mode);
+        true
     }
 
     /// Pop the stack, assuring that the current mode matches the expectation.
@@ -348,14 +371,20 @@ impl JsonParser {
 
             // {
             -6 => {
-                self.stack.push(MODE_KEY);
+                if !self.push(MODE_KEY) {
+                    self.event1 = JsonEvent::Error;
+                    return;
+                }
                 self.state = OB;
                 self.event1 = JsonEvent::StartObject;
             }
 
             // [
             -5 => {
-                self.stack.push(MODE_ARRAY);
+                if !self.push(MODE_ARRAY) {
+                    self.event1 = JsonEvent::Error;
+                    return;
+                }
                 self.state = AR;
                 self.event1 = JsonEvent::StartArray;
             }
@@ -376,11 +405,10 @@ impl JsonParser {
                 match *self.stack.last().unwrap() {
                     MODE_OBJECT => {
                         // A comma causes a flip from object mode to key mode.
-                        if !self.pop(MODE_OBJECT) {
+                        if !self.pop(MODE_OBJECT) || !self.push(MODE_KEY) {
                             self.event1 = JsonEvent::Error;
                             return;
                         }
-                        self.stack.push(MODE_KEY);
                         self.event1 = self.state_to_event();
                         self.state = KE;
                     }
@@ -399,11 +427,10 @@ impl JsonParser {
             // :
             -2 => {
                 // A colon causes a flip from key mode to object mode.
-                if !self.pop(MODE_KEY) {
+                if !self.pop(MODE_KEY) || !self.push(MODE_OBJECT) {
                     self.event1 = JsonEvent::Error;
                     return;
                 }
-                self.stack.push(MODE_OBJECT);
                 self.state = VA;
             }
 
