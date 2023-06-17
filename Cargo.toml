@@ -9,3 +9,7 @@ repository = "https://github.com/michel-kraemer/actson-rs"
 
 [dependencies]
 ringbuffer = "0.14.0"
+
+[dev-dependencies]
+dtoa = "1.0.6"
+serde_json = { version = "1.0.97", features = ["float_roundtrip"] }
