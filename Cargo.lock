@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "actson-rs"
+name = "actson"
 version = "0.1.0"
