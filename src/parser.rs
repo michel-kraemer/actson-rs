@@ -148,6 +148,8 @@ const MODE_DONE: i8 = 1;
 const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
 
+/// A non-blocking, event-based JSON parser.
+///
 /// # Example
 ///
 /// ```
@@ -193,9 +195,6 @@ pub struct JsonParser {
     /// IN (Integer), FR (Fraction) or the like
     current_buffer: Vec<u8>,
 
-    /// The number of characters processed by the JSON parser
-    parsed_character_count: usize,
-
     /// The first event returned by [`Self::parse()`]
     event1: JsonEvent,
 
@@ -209,7 +208,6 @@ impl JsonParser {
             stack: vec![MODE_DONE],
             state: GO,
             current_buffer: vec![],
-            parsed_character_count: 0,
             event1: JsonEvent::NeedMoreInput,
             event2: JsonEvent::NeedMoreInput,
         }
@@ -227,7 +225,7 @@ impl JsonParser {
 
     /// Call this method to proceed parsing the JSON text and to get the next
     /// event. The method returns [`JsonEvent::NeedMoreInput`] if it needs
-    /// more input data from the parser's feeder.
+    /// more input data from the given feeder.
     pub fn next_event(&mut self, feeder: &mut impl JsonFeeder) -> JsonEvent {
         while matches!(self.event1, JsonEvent::NeedMoreInput) {
             if let Some(b) = feeder.next_input() {
@@ -264,8 +262,6 @@ impl JsonParser {
     /// JSON text. It will set [`self::event1`] and [`self::event2`] accordingly.
     /// As a precondition, these fields should have a value of [`JsonEvent::NeedMoreInput`].
     fn parse(&mut self, next_char: u8) {
-        self.parsed_character_count += 1;
-
         // determine the character's class.
         let next_class: i8;
         if next_char >= 128 {
