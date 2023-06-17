@@ -228,10 +228,7 @@ impl JsonParser {
     /// Call this method to proceed parsing the JSON text and to get the next
     /// event. The method returns [`JsonEvent::NeedMoreInput`] if it needs
     /// more input data from the parser's feeder.
-    pub fn next_event<T>(&mut self, feeder: &mut T) -> JsonEvent
-    where
-        T: JsonFeeder,
-    {
+    pub fn next_event(&mut self, feeder: &mut impl JsonFeeder) -> JsonEvent {
         while matches!(self.event1, JsonEvent::NeedMoreInput) {
             if let Some(b) = feeder.next_input() {
                 self.parse(b);
