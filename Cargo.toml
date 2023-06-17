@@ -6,3 +6,6 @@ description = "A reactive (or non-blocking, or asynchronous) JSON parser"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/michel-kraemer/actson-rs"
+
+[dependencies]
+ringbuffer = "0.14.0"

@@ -10,12 +10,24 @@ fn simple_object() {
     let mut prettyprinter = prettyprinter::PrettyPrinter::new();
     let mut feeder = DefaultJsonFeeder::new();
     let mut parser = JsonParser::new();
-    feeder.feed_bytes(json.as_bytes());
-    feeder.done();
+    let mut i: usize = 0;
     loop {
-        let e = parser.next_event(&mut feeder);
+        // feed as many bytes as possible to the parser
+        let mut e = parser.next_event(&mut feeder);
+        while matches!(e, JsonEvent::NeedMoreInput) {
+            i += feeder.feed_bytes(&json.as_bytes()[i..]);
+            if i == json.len() {
+                feeder.done();
+            }
+            e = parser.next_event(&mut feeder);
+        }
+
+        assert!(!matches!(e, JsonEvent::Error));
+
         prettyprinter.on_event(e, &parser).unwrap();
-        if matches!(e, JsonEvent::Eof) || matches!(e, JsonEvent::Error) {
+        println!("{:?}", e);
+
+        if matches!(e, JsonEvent::Eof) {
             break;
         }
     }

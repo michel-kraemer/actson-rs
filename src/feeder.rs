@@ -1,7 +1,8 @@
+use ringbuffer::{AllocRingBuffer, RingBuffer, RingBufferRead, RingBufferWrite};
+
 #[derive(Debug)]
 pub enum FeedError {
     Full,
-    NotEnoughInputData,
 }
 
 /// A feeder can be used to provide more input data to the
@@ -45,18 +46,18 @@ pub trait JsonFeeder {
     fn is_done(&self) -> bool;
 
     /// Decode and return the next character to be parsed
-    fn next_input(&mut self) -> Result<u8, FeedError>;
+    fn next_input(&mut self) -> Option<u8>;
 }
 
 pub struct DefaultJsonFeeder {
-    input: Vec<u8>,
+    input: AllocRingBuffer<u8>,
     done: bool,
 }
 
 impl DefaultJsonFeeder {
     pub fn new() -> Self {
         DefaultJsonFeeder {
-            input: Vec::new(),
+            input: AllocRingBuffer::with_capacity(1024),
             done: false,
         }
     }
@@ -78,12 +79,16 @@ impl JsonFeeder for DefaultJsonFeeder {
     }
 
     fn feed_bytes(&mut self, buf: &[u8]) -> usize {
-        self.input.extend_from_slice(buf);
-        buf.len()
+        let mut result: usize = 0;
+        while result < buf.len() && !self.input.is_full() {
+            self.input.push(buf[result]);
+            result += 1;
+        }
+        result
     }
 
     fn is_full(&self) -> bool {
-        false
+        self.input.is_full()
     }
 
     fn done(&mut self) {
@@ -98,10 +103,7 @@ impl JsonFeeder for DefaultJsonFeeder {
         self.done
     }
 
-    fn next_input(&mut self) -> Result<u8, FeedError> {
-        if !self.has_input() {
-            return Err(FeedError::NotEnoughInputData);
-        }
-        Ok(self.input.remove(0))
+    fn next_input(&mut self) -> Option<u8> {
+        self.input.dequeue()
     }
 }

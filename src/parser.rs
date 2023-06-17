@@ -148,6 +148,40 @@ const MODE_DONE: i8 = 1;
 const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
 
+/// # Example
+///
+/// ```
+/// use actson::{JsonParser, JsonEvent};
+/// use actson::feeder::{DefaultJsonFeeder, JsonFeeder};
+///
+/// let json = r#"{"name": "Elvis"}"#;
+///
+/// let mut feeder = DefaultJsonFeeder::new();
+/// let mut parser = JsonParser::new();
+/// let mut i: usize = 0;
+/// loop {
+///     // feed as many bytes as possible to the parser
+///     let mut event = parser.next_event(&mut feeder);
+///     while matches!(event, JsonEvent::NeedMoreInput) {
+///         i += feeder.feed_bytes(&json.as_bytes()[i..]);
+///         if i == json.len() {
+///             feeder.done();
+///         }
+///         event = parser.next_event(&mut feeder);
+///     }
+///
+///     // do something useful with `event`
+///
+///     if matches!(event, JsonEvent::Error) {
+///        // do proper error handling here!
+///        panic!("Error while parsing JSON");
+///     }
+///
+///     if matches!(event, JsonEvent::Eof) {
+///         break;
+///     }
+/// }
+/// ```
 pub struct JsonParser {
     /// The stack containing the current modes
     stack: Vec<i8>,
@@ -199,7 +233,9 @@ impl JsonParser {
         T: JsonFeeder,
     {
         while matches!(self.event1, JsonEvent::NeedMoreInput) {
-            if !feeder.has_input() {
+            if let Some(b) = feeder.next_input() {
+                self.parse(b);
+            } else {
                 if feeder.is_done() {
                     if self.state != OK {
                         let r = self.state_to_event();
@@ -216,8 +252,6 @@ impl JsonParser {
                 }
                 return JsonEvent::NeedMoreInput;
             }
-            let b = feeder.next_input().unwrap();
-            self.parse(b);
         }
 
         let r = self.event1;
@@ -424,55 +458,5 @@ impl JsonParser {
 impl Default for JsonParser {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{
-        feeder::{DefaultJsonFeeder, JsonFeeder},
-        JsonEvent,
-    };
-
-    use super::JsonParser;
-
-    #[test]
-    fn empty_object() {
-        let json = "{}";
-
-        let mut feeder = DefaultJsonFeeder::new();
-        let mut parser = JsonParser::new();
-        feeder.feed_bytes(json.as_bytes());
-        feeder.done();
-        loop {
-            let e = parser.next_event(&mut feeder);
-            println!("{:?}", e);
-            if matches!(e, JsonEvent::Eof)
-                || matches!(e, JsonEvent::Error)
-                || matches!(e, JsonEvent::NeedMoreInput)
-            {
-                break;
-            }
-        }
-    }
-
-    #[test]
-    fn simple_object() {
-        let json = r#"{"name": "Elvis"}"#;
-
-        let mut feeder = DefaultJsonFeeder::new();
-        let mut parser = JsonParser::new();
-        feeder.feed_bytes(json.as_bytes());
-        feeder.done();
-        loop {
-            let e = parser.next_event(&mut feeder);
-            println!("{:?}", e);
-            if matches!(e, JsonEvent::Eof)
-                || matches!(e, JsonEvent::Error)
-                || matches!(e, JsonEvent::NeedMoreInput)
-            {
-                break;
-            }
-        }
     }
 }
