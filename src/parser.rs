@@ -1,4 +1,10 @@
-use crate::event::JsonEvent;
+use std::{
+    error::Error,
+    num::{ParseFloatError, ParseIntError},
+    string::FromUtf8Error,
+};
+
+use crate::{event::JsonEvent, feeder::JsonFeeder};
 
 const __: i8 = -1; // the universal error code
 
@@ -142,7 +148,7 @@ const MODE_DONE: i8 = 1;
 const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
 
-struct JsonParser {
+pub struct JsonParser {
     /// The stack containing the current modes
     stack: Vec<i8>,
 
@@ -182,7 +188,7 @@ impl JsonParser {
             return false;
         }
         self.stack.pop();
-        return true;
+        true
     }
 
     /// Call this method to proceed parsing the JSON text and to get the next
@@ -190,30 +196,30 @@ impl JsonParser {
     /// more input data from the parser's feeder.
     /// @return the next JSON event or {@link JsonEvent#NEED_MORE_INPUT} if more
     /// input is needed
-    pub fn next_event(&mut self, next_input: u8) -> JsonEvent {
-        //  try {
-        //    while (event1 == JsonEvent.NEED_MORE_INPUT) {
-        //      if (!feeder.hasInput()) {
-        //        if (feeder.isDone()) {
-        //          if (state != OK) {
-        //            int r = stateToEvent();
-        //            if (r != JsonEvent.NEED_MORE_INPUT) {
-        //              state = OK;
-        //              return r;
-        //            }
-        //          }
-        //          return (state == OK && pop(MODE_DONE) ? JsonEvent.EOF : JsonEvent.ERROR);
-        //        }
-        //        return JsonEvent.NEED_MORE_INPUT;
-        //      }
-        //      parse(feeder.nextInput());
-        //    }
-        //  } catch (CharacterCodingException e) {
-        //    return JsonEvent.ERROR;
-        //  }
-        self.parse(next_input);
-        if matches!(self.event1, JsonEvent::NeedMoreInput) {
-            return JsonEvent::NeedMoreInput;
+    pub fn next_event<T>(&mut self, feeder: &mut T) -> JsonEvent
+    where
+        T: JsonFeeder,
+    {
+        while matches!(self.event1, JsonEvent::NeedMoreInput) {
+            if !feeder.has_input() {
+                if feeder.is_done() {
+                    if self.state != OK {
+                        let r = self.state_to_event();
+                        if !matches!(r, JsonEvent::NeedMoreInput) {
+                            self.state = OK;
+                            return r;
+                        }
+                    }
+                    return if self.state == OK && self.pop(MODE_DONE) {
+                        JsonEvent::Eof
+                    } else {
+                        JsonEvent::Error
+                    };
+                }
+                return JsonEvent::NeedMoreInput;
+            }
+            let b = feeder.next_input().unwrap();
+            self.parse(b);
         }
 
         let r = self.event1;
@@ -398,37 +404,73 @@ impl JsonParser {
             _ => JsonEvent::NeedMoreInput,
         }
     }
+
+    pub fn current_string(&self) -> Result<String, FromUtf8Error> {
+        String::from_utf8(self.current_buffer.clone())
+    }
+
+    pub fn current_i32(&self) -> Result<i32, Box<dyn Error>> {
+        let s = self.current_string()?;
+        s.parse().map_err(|e: ParseIntError| e.into())
+    }
+
+    pub fn current_i64(&self) -> Result<i64, Box<dyn Error>> {
+        let s = self.current_string()?;
+        s.parse().map_err(|e: ParseIntError| e.into())
+    }
+
+    pub fn current_f64(&self) -> Result<f64, Box<dyn Error>> {
+        let s = self.current_string()?;
+        s.parse().map_err(|e: ParseFloatError| e.into())
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        feeder::{DefaultJsonFeeder, JsonFeeder},
+        JsonEvent,
+    };
+
     use super::JsonParser;
 
     #[test]
     fn empty_object() {
         let json = "{}";
 
-        let mut events = vec![];
+        let mut feeder = DefaultJsonFeeder::new();
         let mut parser = JsonParser::new();
-        for u in json.bytes() {
-            let e = parser.next_event(u);
-            events.push(e);
+        feeder.feed_bytes(json.as_bytes());
+        feeder.done();
+        loop {
+            let e = parser.next_event(&mut feeder);
+            println!("{:?}", e);
+            if matches!(e, JsonEvent::Eof)
+                || matches!(e, JsonEvent::Error)
+                || matches!(e, JsonEvent::NeedMoreInput)
+            {
+                break;
+            }
         }
-
-        println!("{:?}", events);
     }
 
     #[test]
     fn simple_object() {
         let json = r#"{"name": "Elvis"}"#;
 
-        let mut events = vec![];
+        let mut feeder = DefaultJsonFeeder::new();
         let mut parser = JsonParser::new();
-        for u in json.bytes() {
-            let e = parser.next_event(u);
-            events.push(e);
+        feeder.feed_bytes(json.as_bytes());
+        feeder.done();
+        loop {
+            let e = parser.next_event(&mut feeder);
+            println!("{:?}", e);
+            if matches!(e, JsonEvent::Eof)
+                || matches!(e, JsonEvent::Error)
+                || matches!(e, JsonEvent::NeedMoreInput)
+            {
+                break;
+            }
         }
-
-        println!("{:?}", events);
     }
 }
