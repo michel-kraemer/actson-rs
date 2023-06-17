@@ -1,4 +1,4 @@
-/// All possible JSON events returned by {@link JsonParser#nextEvent()}
+/// All possible JSON events returned by [`JsonParser::next_event()`](crate::JsonParser::next_event())
 #[derive(Copy, Clone, Debug)]
 pub enum JsonEvent {
     /// The JSON text contains a syntax error.
@@ -20,19 +20,20 @@ pub enum JsonEvent {
     /// The end of a JSON array.
     EndArray = 4,
 
-    /// A field name. Call {@link JsonParser#getCurrentString()}
+    /// A field name. Call [JsonParser::current_string()](crate::JsonParser::current_string())
     /// to get the name.
     FieldName = 5,
 
-    /// A string value. Call {@link JsonParser#getCurrentString()}
+    /// A string value. Call [JsonParser::current_string()](crate::JsonParser::current_string())
     /// to get the value.
     ValueString = 6,
 
-    /// An integer value. Call {@link JsonParser#getCurrentInt()}
+    /// An integer value. Call [JsonParser::current_i32()](crate::JsonParser::current_i32())
+    /// or [JsonParser::current_i64()](crate::JsonParser::current_i64())
     /// to get the value.
     ValueInt = 7,
 
-    /// A double value. Call {@link JsonParser#getCurrentDouble()}
+    /// A double value. Call [JsonParser::current_f64()](crate::JsonParser::current_f64())
     /// to get the value.
     ValueDouble = 8,
 

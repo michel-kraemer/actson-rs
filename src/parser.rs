@@ -162,10 +162,10 @@ pub struct JsonParser {
     /// The number of characters processed by the JSON parser
     parsed_character_count: usize,
 
-    /// The first event returned by {@link #parse(char)}
+    /// The first event returned by [`Self::parse()`]
     event1: JsonEvent,
 
-    /// The second event returned by {@link #parse(char)}
+    /// The second event returned by [`Self::parse()`]
     event2: JsonEvent,
 }
 
@@ -192,10 +192,8 @@ impl JsonParser {
     }
 
     /// Call this method to proceed parsing the JSON text and to get the next
-    /// event. The method returns {@link JsonEvent#NEED_MORE_INPUT} if it needs
+    /// event. The method returns [`JsonEvent::NeedMoreInput`] if it needs
     /// more input data from the parser's feeder.
-    /// @return the next JSON event or {@link JsonEvent#NEED_MORE_INPUT} if more
-    /// input is needed
     pub fn next_event<T>(&mut self, feeder: &mut T) -> JsonEvent
     where
         T: JsonFeeder,
@@ -232,10 +230,8 @@ impl JsonParser {
     }
 
     /// This function is called for each character (or partial character) in the
-    /// JSON text. It can accept UTF-8, UTF-16, or UTF-32. It will set
-    /// {@link #event1} and {@link #event2} accordingly. As a precondition these
-    /// fields should have a value of {@link JsonEvent#NEED_MORE_INPUT}.
-    /// @param nextChar the character to parse
+    /// JSON text. It will set [`self::event1`] and [`self::event2`] accordingly.
+    /// As a precondition, these fields should have a value of [`JsonEvent::NeedMoreInput`].
     fn parse(&mut self, next_char: u8) {
         self.parsed_character_count += 1;
 
@@ -392,7 +388,7 @@ impl JsonParser {
     }
 
     /// Converts the current parser state to a JSON event. Returns the JSON
-    /// event or {@link JsonEvent#NEED_MORE_INPUT} if the current state does
+    /// event or [`JsonEvent::NeedMoreInput`] if the current state does
     /// not produce a JSON event
     fn state_to_event(&self) -> JsonEvent {
         match self.state {
@@ -422,6 +418,12 @@ impl JsonParser {
     pub fn current_f64(&self) -> Result<f64, Box<dyn Error>> {
         let s = self.current_string()?;
         s.parse().map_err(|e: ParseFloatError| e.into())
+    }
+}
+
+impl Default for JsonParser {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
