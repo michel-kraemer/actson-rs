@@ -1,4 +1,4 @@
-# Actson [![Actions Status](https://github.com/michel-kraemer/actson-rs/workflows/Rust/badge.svg)](https://github.com/michel-kraemer/actson/actions) [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+# Actson [![Actions Status](https://github.com/michel-kraemer/actson-rs/workflows/Rust/badge.svg)](https://github.com/michel-kraemer/actson-rs/actions) [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Latest Version](https://img.shields.io/crates/v/actson.svg)](https://crates.io/crates/actson) [![Documentation](https://img.shields.io/docsrs/actson/0.1.0)](https://docs.rs/actson/0.1.0/actson/)
 
 Actson is a reactive JSON parser (sometimes referred to as non-blocking or
 asynchronous). It is event-based and can be used in asynchronous code (for example in combination with [Tokio](https://tokio.rs/)).
