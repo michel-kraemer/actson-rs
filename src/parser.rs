@@ -1,7 +1,7 @@
 use std::{
     error::Error,
     num::{ParseFloatError, ParseIntError},
-    string::FromUtf8Error,
+    str::{from_utf8, Utf8Error},
 };
 
 use crate::{event::JsonEvent, feeder::JsonFeeder};
@@ -420,23 +420,26 @@ impl JsonParser {
         }
     }
 
-    pub fn current_string(&self) -> Result<String, FromUtf8Error> {
-        String::from_utf8(self.current_buffer.clone())
+    pub fn current_string(&self) -> Result<String, Utf8Error> {
+        Ok(from_utf8(&self.current_buffer)?.to_string())
     }
 
     pub fn current_i32(&self) -> Result<i32, Box<dyn Error>> {
-        let s = self.current_string()?;
-        s.parse().map_err(|e: ParseIntError| e.into())
+        from_utf8(&self.current_buffer)?
+            .parse()
+            .map_err(|e: ParseIntError| e.into())
     }
 
     pub fn current_i64(&self) -> Result<i64, Box<dyn Error>> {
-        let s = self.current_string()?;
-        s.parse().map_err(|e: ParseIntError| e.into())
+        from_utf8(&self.current_buffer)?
+            .parse()
+            .map_err(|e: ParseIntError| e.into())
     }
 
     pub fn current_f64(&self) -> Result<f64, Box<dyn Error>> {
-        let s = self.current_string()?;
-        s.parse().map_err(|e: ParseFloatError| e.into())
+        from_utf8(&self.current_buffer)?
+            .parse()
+            .map_err(|e: ParseFloatError| e.into())
     }
 }
 
