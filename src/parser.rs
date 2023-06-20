@@ -1,6 +1,5 @@
 use std::{
     error::Error,
-    num::{ParseFloatError, ParseIntError},
     str::{from_utf8, Utf8Error},
 };
 
@@ -425,21 +424,15 @@ impl JsonParser {
     }
 
     pub fn current_i32(&self) -> Result<i32, Box<dyn Error>> {
-        from_utf8(&self.current_buffer)?
-            .parse()
-            .map_err(|e: ParseIntError| e.into())
+        lexical::parse(&self.current_buffer).map_err(|e| e.into())
     }
 
     pub fn current_i64(&self) -> Result<i64, Box<dyn Error>> {
-        from_utf8(&self.current_buffer)?
-            .parse()
-            .map_err(|e: ParseIntError| e.into())
+        lexical::parse(&self.current_buffer).map_err(|e| e.into())
     }
 
     pub fn current_f64(&self) -> Result<f64, Box<dyn Error>> {
-        from_utf8(&self.current_buffer)?
-            .parse()
-            .map_err(|e: ParseFloatError| e.into())
+        lexical::parse(&self.current_buffer).map_err(|e| e.into())
     }
 }
 

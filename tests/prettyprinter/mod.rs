@@ -116,8 +116,7 @@ impl PrettyPrinter {
 
     fn on_value_double(&mut self, value: f64) {
         self.on_value();
-        let mut buffer = dtoa::Buffer::new();
-        self.result.push_str(buffer.format(value));
+        self.result.push_str(&lexical::to_string(value));
     }
 
     fn on_value_boolean(&mut self, value: bool) {
