@@ -1,5 +1,5 @@
 /// All possible JSON events returned by [`JsonParser::next_event()`](crate::JsonParser::next_event())
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum JsonEvent {
     /// The JSON text contains a syntax error.
     Error = -1,

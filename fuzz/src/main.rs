@@ -13,7 +13,7 @@ fn main() {
         let mut i: usize = 0;
         loop {
             let mut e = parser.next_event(&mut feeder);
-            while matches!(e, JsonEvent::NeedMoreInput) {
+            while e == JsonEvent::NeedMoreInput {
                 i += feeder.feed_bytes(&data[i..]);
                 if i == data.len() {
                     feeder.done();
@@ -21,7 +21,7 @@ fn main() {
                 e = parser.next_event(&mut feeder);
             }
 
-            if matches!(e, JsonEvent::Eof) || matches!(e, JsonEvent::Error) {
+            if e == JsonEvent::Eof || e == JsonEvent::Error {
                 break;
             }
         }

@@ -1,6 +1,6 @@
 use ringbuffer::{AllocRingBuffer, RingBuffer, RingBufferRead, RingBufferWrite};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FeedError {
     Full,
 }
@@ -205,10 +205,7 @@ mod test {
             feeder.feed_byte(b'a' + i).unwrap();
         }
         assert!(feeder.is_full());
-        assert!(matches!(
-            feeder.feed_byte(b'z'),
-            Err(crate::feeder::FeedError::Full)
-        ));
+        assert_eq!(feeder.feed_byte(b'z'), Err(crate::feeder::FeedError::Full));
     }
 
     /// Test if the feeder returns the correct input

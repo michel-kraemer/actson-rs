@@ -19,7 +19,7 @@ fn parse(json: &str) -> String {
     loop {
         // feed as many bytes as possible to the parser
         let mut e = parser.next_event(&mut feeder);
-        while matches!(e, JsonEvent::NeedMoreInput) {
+        while e == JsonEvent::NeedMoreInput {
             i += feeder.feed_bytes(&buf[i..]);
             if i == json.len() {
                 feeder.done();
@@ -27,11 +27,11 @@ fn parse(json: &str) -> String {
             e = parser.next_event(&mut feeder);
         }
 
-        assert!(!matches!(e, JsonEvent::Error));
+        assert_ne!(e, JsonEvent::Error);
 
         prettyprinter.on_event(e, &parser).unwrap();
 
-        if matches!(e, JsonEvent::Eof) {
+        if e == JsonEvent::Eof {
             break;
         }
     }
@@ -53,7 +53,7 @@ fn parse_fail_with_parser(json: &str, parser: &mut JsonParser) {
     loop {
         // feed as many bytes as possible to the parser
         let mut e = parser.next_event(&mut feeder);
-        while matches!(e, JsonEvent::NeedMoreInput) {
+        while e == JsonEvent::NeedMoreInput {
             i += feeder.feed_bytes(&buf[i..]);
             if i == json.len() {
                 feeder.done();
@@ -61,9 +61,9 @@ fn parse_fail_with_parser(json: &str, parser: &mut JsonParser) {
             e = parser.next_event(&mut feeder);
         }
 
-        ok = !matches!(e, JsonEvent::Error);
+        ok = e != JsonEvent::Error;
 
-        if !ok || matches!(e, JsonEvent::Eof) {
+        if !ok || e == JsonEvent::Eof {
             break;
         }
     }
@@ -145,7 +145,7 @@ fn too_many_next_event() {
 
     let mut feeder = DefaultJsonFeeder::new();
     feeder.done();
-    assert!(matches!(parser.next_event(&mut feeder), JsonEvent::Error));
+    assert_eq!(parser.next_event(&mut feeder), JsonEvent::Error);
 }
 
 /// Make sure a number right before the end of the object can be parsed

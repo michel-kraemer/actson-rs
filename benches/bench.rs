@@ -55,7 +55,7 @@ fn actson_parse(json_bytes: &[u8]) {
     loop {
         // feed as many bytes as possible to the parser
         let mut event = parser.next_event(&mut feeder);
-        while matches!(event, JsonEvent::NeedMoreInput) {
+        while event == JsonEvent::NeedMoreInput {
             i += feeder.feed_bytes(&json_bytes[i..]);
             if i == json_bytes.len() {
                 feeder.done();
@@ -70,7 +70,7 @@ fn actson_parse(json_bytes: &[u8]) {
             JsonEvent::StartObject | JsonEvent::StartArray => {
                 stack.push((current_key, current_val));
                 current_key = None;
-                current_val = if matches!(event, JsonEvent::StartObject) {
+                current_val = if event == JsonEvent::StartObject {
                     Value::Object(Map::new())
                 } else {
                     Value::Array(vec![])

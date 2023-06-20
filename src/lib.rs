@@ -14,7 +14,7 @@
 //! loop {
 //!     // feed as many bytes as possible to the parser
 //!     let mut event = parser.next_event(&mut feeder);
-//!     while matches!(event, JsonEvent::NeedMoreInput) {
+//!     while event == JsonEvent::NeedMoreInput {
 //!         i += feeder.feed_bytes(&json[i..]);
 //!         if i == json.len() {
 //!             feeder.done();
@@ -24,12 +24,12 @@
 //!
 //!     // do something useful with `event`
 //!
-//!     if matches!(event, JsonEvent::Error) {
+//!     if event == JsonEvent::Error {
 //!        // do proper error handling here!
 //!        panic!("Error while parsing JSON");
 //!     }
 //!
-//!     if matches!(event, JsonEvent::Eof) {
+//!     if event == JsonEvent::Eof {
 //!         break;
 //!     }
 //! }

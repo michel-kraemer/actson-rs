@@ -215,14 +215,14 @@ impl JsonParser {
     /// event. The method returns [`JsonEvent::NeedMoreInput`] if it needs
     /// more input data from the given feeder.
     pub fn next_event(&mut self, feeder: &mut impl JsonFeeder) -> JsonEvent {
-        while matches!(self.event1, JsonEvent::NeedMoreInput) {
+        while self.event1 == JsonEvent::NeedMoreInput {
             if let Some(b) = feeder.next_input() {
                 self.parse(b);
             } else {
                 if feeder.is_done() {
                     if self.state != OK {
                         let r = self.state_to_event();
-                        if !matches!(r, JsonEvent::NeedMoreInput) {
+                        if r != JsonEvent::NeedMoreInput {
                             self.state = OK;
                             return r;
                         }
@@ -238,7 +238,7 @@ impl JsonParser {
         }
 
         let r = self.event1;
-        if !matches!(self.event1, JsonEvent::Error) {
+        if self.event1 != JsonEvent::Error {
             self.event1 = self.event2;
             self.event2 = JsonEvent::NeedMoreInput;
         }
@@ -311,7 +311,7 @@ impl JsonParser {
                     return;
                 }
                 self.event1 = self.state_to_event();
-                if matches!(self.event1, JsonEvent::NeedMoreInput) {
+                if self.event1 == JsonEvent::NeedMoreInput {
                     self.event1 = JsonEvent::EndObject;
                 } else {
                     self.event2 = JsonEvent::EndObject;
@@ -326,7 +326,7 @@ impl JsonParser {
                     return;
                 }
                 self.event1 = self.state_to_event();
-                if matches!(self.event1, JsonEvent::NeedMoreInput) {
+                if self.event1 == JsonEvent::NeedMoreInput {
                     self.event1 = JsonEvent::EndArray;
                 } else {
                     self.event2 = JsonEvent::EndArray;
