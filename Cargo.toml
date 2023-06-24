@@ -11,7 +11,7 @@ categories = ["encoding", "parser-implementations"]
 
 [dependencies]
 lexical = "6.1.1"
-ringbuffer = "0.14.0"
+ringbuffer = "0.14.1"
 
 [dev-dependencies]
 criterion = "0.5.1"
