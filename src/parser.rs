@@ -216,7 +216,12 @@ impl JsonParser {
     pub fn next_event(&mut self, feeder: &mut impl JsonFeeder) -> JsonEvent {
         while self.event1 == JsonEvent::NeedMoreInput {
             if let Some(b) = feeder.next_input() {
-                self.parse(b);
+                if self.state == ST && b >= 32 && b <= 127 && b != b'\\' && b != b'"' {
+                    // shortcut
+                    self.current_buffer.push(b);
+                } else {
+                    self.parse(b);
+                }
             } else {
                 if feeder.is_done() {
                     if self.state != OK {
