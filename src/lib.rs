@@ -38,5 +38,8 @@ mod event;
 pub mod feeder;
 mod parser;
 
+#[cfg(feature = "serde_json")]
+pub mod serde_json;
+
 pub use event::JsonEvent;
 pub use parser::JsonParser;

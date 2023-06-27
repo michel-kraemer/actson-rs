@@ -1,24 +1,21 @@
-use actson::{
-    feeder::{DefaultJsonFeeder, JsonFeeder},
-    JsonEvent, JsonParser,
-};
+use actson::{feeder::PushJsonFeeder, JsonEvent, JsonParser};
 
 #[macro_use]
 extern crate afl;
 
 fn main() {
     fuzz!(|data: &[u8]| {
-        let mut feeder = DefaultJsonFeeder::new();
-        let mut parser = JsonParser::new();
+        let mut feeder = PushJsonFeeder::new();
+        let mut parser = JsonParser::new(&mut feeder);
         let mut i: usize = 0;
         loop {
-            let mut e = parser.next_event(&mut feeder);
+            let mut e = parser.next_event();
             while e == JsonEvent::NeedMoreInput {
-                i += feeder.feed_bytes(&data[i..]);
+                i += parser.feeder.push_bytes(&data[i..]);
                 if i == data.len() {
-                    feeder.done();
+                    parser.feeder.done();
                 }
-                e = parser.next_event(&mut feeder);
+                e = parser.next_event();
             }
 
             if e == JsonEvent::Eof || e == JsonEvent::Error {
