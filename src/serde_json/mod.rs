@@ -1,6 +1,6 @@
 use serde_json::{Map, Number, Value};
 
-use crate::feeder::{JsonFeeder, PushJsonFeeder};
+use crate::feeder::{JsonFeeder, SliceJsonFeeder};
 use crate::{JsonEvent, JsonParser};
 
 #[derive(Debug, Clone)]
@@ -47,28 +47,19 @@ where
 /// assert_eq!(expected, actual);
 /// ```
 pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
-    let mut feeder = PushJsonFeeder::new();
+    let mut feeder = SliceJsonFeeder::new(v);
     let mut parser = JsonParser::new(&mut feeder);
 
     let mut stack = vec![];
     let mut result = None;
     let mut current_key = None;
 
-    let mut i: usize = 0;
     loop {
-        // feed as many bytes as possible to the parser
-        let mut event = parser.next_event();
-        while event == JsonEvent::NeedMoreInput {
-            i += parser.feeder.push_bytes(&v[i..]);
-            if i == v.len() {
-                parser.feeder.done();
-            }
-            event = parser.next_event();
-        }
-
+        let event = parser.next_event();
         match event {
+            JsonEvent::NeedMoreInput => {}
+
             JsonEvent::Error => return Err(ParserError),
-            JsonEvent::NeedMoreInput => panic!("Should never happen"),
 
             JsonEvent::StartObject | JsonEvent::StartArray => {
                 let v = if event == JsonEvent::StartObject {
