@@ -226,7 +226,7 @@ where
     pub fn next_event(&mut self) -> JsonEvent {
         while self.event1 == JsonEvent::NeedMoreInput {
             if let Some(b) = self.feeder.next_input() {
-                if self.state == ST && b >= 32 && b <= 127 && b != b'\\' && b != b'"' {
+                if self.state == ST && (32..=127).contains(&b) && b != b'\\' && b != b'"' {
                     // shortcut
                     self.current_buffer.push(b);
                 } else {

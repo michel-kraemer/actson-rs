@@ -32,7 +32,7 @@ fn parse_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) -> Str
 
         assert_ne!(e, JsonEvent::Error);
 
-        prettyprinter.on_event(e, &parser).unwrap();
+        prettyprinter.on_event(e, parser).unwrap();
 
         if e == JsonEvent::Eof {
             break;
