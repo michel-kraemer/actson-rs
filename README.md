@@ -17,13 +17,14 @@ asynchronous). It is event-based and can be used in asynchronous code (for examp
 
 ### Push-based parsing
 
-Push-based parsing is the most flexible way of using Actson. Push new bytes into a
-`PushJsonFeeder` and then let the parser consume them until it returns
+Push-based parsing is the most flexible way of using Actson. Push new bytes
+into a `PushJsonFeeder` and then let the parser consume them until it returns
 `JsonEvent::NeedMoreInput`. Repeat this process until you receive
 `JsonEvent::Eof` or `JsonEvent::Error`.
 
-This approach is very low-level but gives you the freedom to provide new bytes to the parser
-whenever they are available and to generate new JSON events whenever you need them.
+This approach is very low-level but gives you the freedom to provide new bytes
+to the parser whenever they are available and to generate new JSON events
+whenever you need them.
 
 ```rust
 use actson::{JsonParser, JsonEvent};
@@ -86,6 +87,27 @@ loop {
     }
 }
 ```
+
+### Parsing into a Serde JSON Value
+
+For testing and compatibility reasons, Actson is able to parse a byte slice
+into a [Serde JSON](https://github.com/serde-rs/json) Value.
+
+Heads up: You need to enable the `serde_json` feature for this.
+
+```rust
+use actson::serde_json::from_slice;
+
+let json = r#"{"name": "Elvis"}"#.as_bytes();
+let value = from_slice(json).unwrap();
+
+assert!(value.is_object());
+assert_eq!(value["name"], "Elvis");
+```
+
+However, if you find yourself doing this, you probably don't need the reactive
+features of Actson and your data seems to completely fit into memory. In this
+case, you're most likely better off using Serde JSON directly.
 
 ## Other languages
 
