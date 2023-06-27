@@ -54,11 +54,12 @@
 //!
 //! ```
 //! use actson::{JsonParser, JsonEvent};
-//! use actson::feeder::{SliceJsonFeeder, JsonFeeder};
+//! use actson::feeder::SliceJsonFeeder;
 //!
 //! let json = r#"{"name": "Elvis"}"#.as_bytes();
 //!
-//! let mut parser = JsonParser::new(&mut SliceJsonFeeder::new(json));
+//! let mut feeder = SliceJsonFeeder::new(json);
+//! let mut parser = JsonParser::new(&mut feeder);
 //! loop {
 //!     let event = parser.next_event();
 //!
