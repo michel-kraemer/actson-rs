@@ -7,7 +7,7 @@
 //! ### Push-based parsing
 //!
 //! Push-based parsing is the most flexible way of using Actson. Push new bytes into a
-//! [`PushJsonFeeder`](crate::feeder::PushJsonFeeder) and then let the parser consume these bytes
+//! [`PushJsonFeeder`](crate::feeder::PushJsonFeeder) and then let the parser consume them
 //! until it returns [`JsonEvent::NeedMoreInput`]. Repeat this process until you receive
 //! [`JsonEvent::Eof`] or [`JsonEvent::Error`].
 //!
@@ -58,9 +58,7 @@
 //!
 //! let json = r#"{"name": "Elvis"}"#.as_bytes();
 //!
-//! let mut feeder = SliceJsonFeeder::new(json);
-//! let mut parser = JsonParser::new(&mut feeder);
-//! let mut i: usize = 0;
+//! let mut parser = JsonParser::new(&mut SliceJsonFeeder::new(json));
 //! loop {
 //!     let event = parser.next_event();
 //!
