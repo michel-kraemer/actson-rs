@@ -4,18 +4,18 @@
 //!
 //! ```
 //! use actson::{JsonParser, JsonEvent};
-//! use actson::feeder::{DefaultJsonFeeder, JsonFeeder};
+//! use actson::feeder::{PushJsonFeeder, JsonFeeder};
 //!
 //! let json = r#"{"name": "Elvis"}"#.as_bytes();
 //!
-//! let mut feeder = DefaultJsonFeeder::new();
+//! let mut feeder = PushJsonFeeder::new();
 //! let mut parser = JsonParser::new();
 //! let mut i: usize = 0;
 //! loop {
 //!     // feed as many bytes as possible to the parser
 //!     let mut event = parser.next_event(&mut feeder);
 //!     while event == JsonEvent::NeedMoreInput {
-//!         i += feeder.feed_bytes(&json[i..]);
+//!         i += feeder.push_bytes(&json[i..]);
 //!         if i == json.len() {
 //!             feeder.done();
 //!         }

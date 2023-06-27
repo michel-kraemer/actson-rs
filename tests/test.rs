@@ -2,7 +2,7 @@ mod prettyprinter;
 
 use std::fs;
 
-use actson::feeder::{DefaultJsonFeeder, JsonFeeder};
+use actson::feeder::PushJsonFeeder;
 use actson::{JsonEvent, JsonParser};
 use prettyprinter::PrettyPrinter;
 use serde_json::Value;
@@ -13,14 +13,14 @@ fn parse(json: &str) -> String {
     let buf = json.as_bytes();
 
     let mut prettyprinter = PrettyPrinter::new();
-    let mut feeder = DefaultJsonFeeder::new();
+    let mut feeder = PushJsonFeeder::new();
     let mut parser = JsonParser::new();
     let mut i: usize = 0;
     loop {
         // feed as many bytes as possible to the parser
         let mut e = parser.next_event(&mut feeder);
         while e == JsonEvent::NeedMoreInput {
-            i += feeder.feed_bytes(&buf[i..]);
+            i += feeder.push_bytes(&buf[i..]);
             if i == json.len() {
                 feeder.done();
             }
@@ -47,14 +47,14 @@ fn parse_fail(json: &str) {
 fn parse_fail_with_parser(json: &str, parser: &mut JsonParser) {
     let buf = json.as_bytes();
 
-    let mut feeder = DefaultJsonFeeder::new();
+    let mut feeder = PushJsonFeeder::new();
     let mut i: usize = 0;
     let mut ok: bool;
     loop {
         // feed as many bytes as possible to the parser
         let mut e = parser.next_event(&mut feeder);
         while e == JsonEvent::NeedMoreInput {
-            i += feeder.feed_bytes(&buf[i..]);
+            i += feeder.push_bytes(&buf[i..]);
             if i == json.len() {
                 feeder.done();
             }
@@ -143,7 +143,7 @@ fn too_many_next_event() {
     let mut parser = JsonParser::new();
     assert_json_eq(json, &parse(json));
 
-    let mut feeder = DefaultJsonFeeder::new();
+    let mut feeder = PushJsonFeeder::new();
     feeder.done();
     assert_eq!(parser.next_event(&mut feeder), JsonEvent::Error);
 }

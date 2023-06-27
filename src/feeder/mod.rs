@@ -1,6 +1,6 @@
-mod default;
 mod feeder;
+mod push;
 
-pub use default::DefaultJsonFeeder;
 pub use feeder::FeedError;
 pub use feeder::JsonFeeder;
+pub use push::PushJsonFeeder;

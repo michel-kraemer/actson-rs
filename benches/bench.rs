@@ -1,9 +1,6 @@
 use std::fs;
 
-use actson::{
-    feeder::{DefaultJsonFeeder, JsonFeeder},
-    JsonEvent, JsonParser,
-};
+use actson::{feeder::PushJsonFeeder, JsonEvent, JsonParser};
 use criterion::{criterion_group, criterion_main, Criterion};
 use serde_json::{Map, Number, Value};
 
@@ -44,7 +41,7 @@ fn to_value(event: &JsonEvent, parser: &JsonParser) -> Option<Value> {
 }
 
 fn actson_parse(json_bytes: &[u8]) {
-    let mut feeder = DefaultJsonFeeder::new();
+    let mut feeder = PushJsonFeeder::new();
     let mut parser = JsonParser::new();
 
     let mut stack = vec![];
@@ -56,7 +53,7 @@ fn actson_parse(json_bytes: &[u8]) {
         // feed as many bytes as possible to the parser
         let mut event = parser.next_event(&mut feeder);
         while event == JsonEvent::NeedMoreInput {
-            i += feeder.feed_bytes(&json_bytes[i..]);
+            i += feeder.push_bytes(&json_bytes[i..]);
             if i == json_bytes.len() {
                 feeder.done();
             }
