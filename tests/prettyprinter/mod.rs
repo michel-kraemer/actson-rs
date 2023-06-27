@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use actson::feeder::JsonFeeder;
 use actson::{JsonEvent, JsonParser};
 
 enum Type {
@@ -129,11 +130,14 @@ impl PrettyPrinter {
         self.result.push_str("null");
     }
 
-    pub fn on_event(
+    pub fn on_event<T>(
         &mut self,
         event: JsonEvent,
-        parser: &JsonParser,
-    ) -> Result<(), Box<dyn Error>> {
+        parser: &JsonParser<T>,
+    ) -> Result<(), Box<dyn Error>>
+    where
+        T: JsonFeeder,
+    {
         match event {
             JsonEvent::NeedMoreInput => {}
             JsonEvent::StartObject => self.on_start_object(),

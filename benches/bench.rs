@@ -1,6 +1,9 @@
 use std::fs;
 
-use actson::{feeder::PushJsonFeeder, JsonEvent, JsonParser};
+use actson::{
+    feeder::{JsonFeeder, PushJsonFeeder},
+    JsonEvent, JsonParser,
+};
 use criterion::{criterion_group, criterion_main, Criterion};
 use serde_json::{Map, Number, Value};
 
@@ -17,7 +20,10 @@ fn make_large(json: &str) -> String {
     large
 }
 
-fn to_value(event: &JsonEvent, parser: &JsonParser) -> Option<Value> {
+fn to_value<T>(event: &JsonEvent, parser: &JsonParser<T>) -> Option<Value>
+where
+    T: JsonFeeder,
+{
     match event {
         JsonEvent::ValueString => Some(Value::String(parser.current_string().unwrap())),
 
@@ -42,7 +48,7 @@ fn to_value(event: &JsonEvent, parser: &JsonParser) -> Option<Value> {
 
 fn actson_parse(json_bytes: &[u8]) {
     let mut feeder = PushJsonFeeder::new();
-    let mut parser = JsonParser::new();
+    let mut parser = JsonParser::new(&mut feeder);
 
     let mut stack = vec![];
     let mut current_val = Value::Array(vec![]);
@@ -51,13 +57,13 @@ fn actson_parse(json_bytes: &[u8]) {
     let mut i: usize = 0;
     loop {
         // feed as many bytes as possible to the parser
-        let mut event = parser.next_event(&mut feeder);
+        let mut event = parser.next_event();
         while event == JsonEvent::NeedMoreInput {
-            i += feeder.push_bytes(&json_bytes[i..]);
+            i += parser.feeder.push_bytes(&json_bytes[i..]);
             if i == json_bytes.len() {
-                feeder.done();
+                parser.feeder.done();
             }
-            event = parser.next_event(&mut feeder);
+            event = parser.next_event();
         }
 
         match event {

@@ -9,17 +9,17 @@
 //! let json = r#"{"name": "Elvis"}"#.as_bytes();
 //!
 //! let mut feeder = PushJsonFeeder::new();
-//! let mut parser = JsonParser::new();
+//! let mut parser = JsonParser::new(&mut feeder);
 //! let mut i: usize = 0;
 //! loop {
 //!     // feed as many bytes as possible to the parser
-//!     let mut event = parser.next_event(&mut feeder);
+//!     let mut event = parser.next_event();
 //!     while event == JsonEvent::NeedMoreInput {
-//!         i += feeder.push_bytes(&json[i..]);
+//!         i += parser.feeder.push_bytes(&json[i..]);
 //!         if i == json.len() {
-//!             feeder.done();
+//!             parser.feeder.done();
 //!         }
-//!         event = parser.next_event(&mut feeder);
+//!         event = parser.next_event();
 //!     }
 //!
 //!     // do something useful with `event`

@@ -148,7 +148,12 @@ const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
 
 /// A non-blocking, event-based JSON parser.
-pub struct JsonParser {
+pub struct JsonParser<'a, T>
+where
+    T: JsonFeeder,
+{
+    pub feeder: &'a mut T,
+
     /// The stack containing the current modes
     stack: Vec<i8>,
 
@@ -169,9 +174,13 @@ pub struct JsonParser {
     event2: JsonEvent,
 }
 
-impl JsonParser {
-    pub fn new() -> Self {
+impl<'a, T> JsonParser<'a, T>
+where
+    T: JsonFeeder,
+{
+    pub fn new(feeder: &'a mut T) -> Self {
         JsonParser {
+            feeder,
             stack: vec![MODE_DONE],
             depth: 2048,
             state: GO,
@@ -181,8 +190,9 @@ impl JsonParser {
         }
     }
 
-    pub fn new_with_max_depth(max_depth: usize) -> Self {
+    pub fn new_with_max_depth(feeder: &'a mut T, max_depth: usize) -> Self {
         JsonParser {
+            feeder,
             stack: vec![MODE_DONE],
             depth: max_depth,
             state: GO,
@@ -213,9 +223,9 @@ impl JsonParser {
     /// Call this method to proceed parsing the JSON text and to get the next
     /// event. The method returns [`JsonEvent::NeedMoreInput`] if it needs
     /// more input data from the given feeder.
-    pub fn next_event(&mut self, feeder: &mut impl JsonFeeder) -> JsonEvent {
+    pub fn next_event(&mut self) -> JsonEvent {
         while self.event1 == JsonEvent::NeedMoreInput {
-            if let Some(b) = feeder.next_input() {
+            if let Some(b) = self.feeder.next_input() {
                 if self.state == ST && b >= 32 && b <= 127 && b != b'\\' && b != b'"' {
                     // shortcut
                     self.current_buffer.push(b);
@@ -223,7 +233,7 @@ impl JsonParser {
                     self.parse(b);
                 }
             } else {
-                if feeder.is_done() {
+                if self.feeder.is_done() {
                     if self.state != OK {
                         let r = self.state_to_event();
                         if r != JsonEvent::NeedMoreInput {
@@ -438,11 +448,5 @@ impl JsonParser {
 
     pub fn current_f64(&self) -> Result<f64, Box<dyn Error>> {
         lexical::parse(&self.current_buffer).map_err(|e| e.into())
-    }
-}
-
-impl Default for JsonParser {
-    fn default() -> Self {
-        Self::new()
     }
 }
