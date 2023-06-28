@@ -59,6 +59,42 @@ loop {
 }
 ```
 
+### Parsing from a `BufReader`
+
+`BufReaderJsonFeeder` allows you to feed the parser from a `BufReader`. This is
+useful if you want to parse JSON from a file or a network connection.
+
+```rust
+use actson::{JsonParser, JsonEvent};
+
+use std::fs::File;
+use std::io::BufReader;
+
+let file = File::open("tests/fixtures/pass1.txt").unwrap();
+let mut reader = BufReader::new(file);
+
+let mut feeder = actson::feeder::BufReaderJsonFeeder::new(&mut reader);
+let mut parser = JsonParser::new(&mut feeder);
+loop {
+    let mut event = parser.next_event();
+    if event == JsonEvent::NeedMoreInput {
+        parser.feeder.fill_buf().unwrap();
+        event = parser.next_event();
+    }
+
+    // do something useful with `event`
+    // match event {
+    //     ...
+    // }
+
+    assert_ne!(event, JsonEvent::Error);
+
+    if event == JsonEvent::Eof {
+        break;
+    }
+}
+```
+
 ### Parsing a slice of bytes
 
 For convenience, `SliceJsonFeeder` allows you to feed the parser from a slice

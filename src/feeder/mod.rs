@@ -1,6 +1,8 @@
+mod bufreader;
 mod push;
 mod slice;
 
+pub use bufreader::BufReaderJsonFeeder;
 pub use push::PushJsonFeeder;
 pub use slice::SliceJsonFeeder;
 

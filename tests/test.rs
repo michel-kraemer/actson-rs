@@ -1,3 +1,4 @@
+mod feeder;
 mod prettyprinter;
 
 use std::fs;
