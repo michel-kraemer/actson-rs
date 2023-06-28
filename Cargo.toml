@@ -10,16 +10,20 @@ keywords = ["json", "parser", "parsing", "deserialization"]
 categories = ["encoding", "parser-implementations"]
 
 [features]
+default = ["tokio"]
+tokio = ["dep:tokio"]
 serde_json = ["dep:serde_json"]
 
 [dependencies]
 lexical = "6.1.1"
 ringbuffer = "0.14.1"
 serde_json = { version = "1.0.99", features = ["float_roundtrip"], optional = true }
+tokio = { version = "1.29.0", features = ["io-util", "rt-multi-thread"], optional = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
 serde_json = { version = "1.0.99", features = ["float_roundtrip"] }
+tokio = { version = "1.29.0", features = ["fs", "macros", "rt-multi-thread"]}
 
 [[bench]]
 name = "bench"

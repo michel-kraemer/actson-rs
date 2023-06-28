@@ -59,10 +59,61 @@ loop {
 }
 ```
 
+### Asynchronous parsing with Tokio
+
+Actson can be used with Tokio to parse JSON asynchronously.
+
+The main idea here is to call `JsonParser::next_event()` in a loop to
+parse the JSON document and to produce events. Whenever you get
+`JsonEvent::NeedMoreInput`, call `AsyncBufReaderJsonFeeder::fill_buf()`
+to asynchronously read more bytes from the input and to provide them to
+the parser.
+
+*Heads up:* The `tokio` feature has to be enabled for this. It is enabled
+by default.
+
+```rust
+use tokio::fs::File;
+use tokio::io::{self, AsyncReadExt, BufReader};
+
+use actson::{JsonParser, JsonEvent};
+use actson::tokio::AsyncBufReaderJsonFeeder;
+
+#[tokio::main]
+async fn main() {
+    let file = File::open("tests/fixtures/pass1.txt").await.unwrap();
+    let mut reader = BufReader::new(file);
+
+    let mut feeder = AsyncBufReaderJsonFeeder::new(&mut reader);
+    let mut parser = JsonParser::new(&mut feeder);
+    loop {
+        let mut event = parser.next_event();
+        if event == JsonEvent::NeedMoreInput {
+            parser.feeder.fill_buf().await.unwrap();
+            event = parser.next_event();
+        }
+
+        // do something useful with `event`
+        // match event {
+        //     ...
+        // }
+
+        assert_ne!(event, JsonEvent::Error);
+
+        if event == JsonEvent::Eof {
+            break;
+        }
+    }
+}
+```
+
 ### Parsing from a `BufReader`
 
-`BufReaderJsonFeeder` allows you to feed the parser from a `BufReader`. This is
-useful if you want to parse JSON from a file or a network connection.
+`BufReaderJsonFeeder` allows you to feed the parser from a `std::io::BufReader`.
+
+*Note:* By following this synchronous and blocking approach, you are missing
+out on Actson's reactive properties. We recommend using Actson together
+with Tokio instead to parse JSON asynchronously (see above).
 
 ```rust
 use actson::{JsonParser, JsonEvent};
@@ -129,7 +180,7 @@ loop {
 For testing and compatibility reasons, Actson is able to parse a byte slice
 into a [Serde JSON](https://github.com/serde-rs/json) Value.
 
-Heads up: You need to enable the `serde_json` feature for this.
+*Heads up:* You need to enable the `serde_json` feature for this.
 
 ```rust
 use actson::serde_json::from_slice;
