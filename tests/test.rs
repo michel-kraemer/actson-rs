@@ -13,23 +13,23 @@ use serde_json::Value;
 /// [`PrettyPrinter`]. Assert that the input JSON string is valid.
 fn parse(json: &str) -> String {
     let mut feeder = PushJsonFeeder::new();
-    parse_with_parser(json, &mut JsonParser::new(&mut feeder))
+    parse_with_parser(json, &mut JsonParser::new(), &mut feeder)
 }
 
-fn parse_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) -> String {
+fn parse_with_parser(json: &str, parser: &mut JsonParser, feeder: &mut PushJsonFeeder) -> String {
     let buf = json.as_bytes();
 
     let mut prettyprinter = PrettyPrinter::new();
     let mut i: usize = 0;
     loop {
         // feed as many bytes as possible to the parser
-        let mut e = parser.next_event();
+        let mut e = parser.next_event(feeder);
         while e == JsonEvent::NeedMoreInput {
-            i += parser.feeder.push_bytes(&buf[i..]);
+            i += feeder.push_bytes(&buf[i..]);
             if i == json.len() {
-                parser.feeder.done();
+                feeder.done();
             }
-            e = parser.next_event();
+            e = parser.next_event(feeder);
         }
 
         assert_ne!(e, JsonEvent::Error);
@@ -47,23 +47,23 @@ fn parse_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) -> Str
 /// Parse a JSON string and expect parsing to fail
 fn parse_fail(json: &str) {
     let mut feeder = PushJsonFeeder::new();
-    parse_fail_with_parser(json, &mut JsonParser::new(&mut feeder));
+    parse_fail_with_parser(json, &mut JsonParser::new(), &mut feeder);
 }
 
-fn parse_fail_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) {
+fn parse_fail_with_parser(json: &str, parser: &mut JsonParser, feeder: &mut PushJsonFeeder) {
     let buf = json.as_bytes();
 
     let mut i: usize = 0;
     let mut ok: bool;
     loop {
         // feed as many bytes as possible to the parser
-        let mut e = parser.next_event();
+        let mut e = parser.next_event(feeder);
         while e == JsonEvent::NeedMoreInput {
-            i += parser.feeder.push_bytes(&buf[i..]);
+            i += feeder.push_bytes(&buf[i..]);
             if i == json.len() {
-                parser.feeder.done();
+                feeder.done();
             }
-            e = parser.next_event();
+            e = parser.next_event(feeder);
         }
 
         ok = e != JsonEvent::Error;
@@ -94,10 +94,10 @@ fn test_pass() {
 #[test]
 fn test_fail() {
     let mut feeder = PushJsonFeeder::new();
-    let mut parser = JsonParser::new_with_max_depth(&mut feeder, 16);
+    let mut parser = JsonParser::new_with_max_depth(16);
     for i in 2..=34 {
         let json = fs::read_to_string(format!("tests/fixtures/fail{}.txt", i)).unwrap();
-        parse_fail_with_parser(&json, &mut parser);
+        parse_fail_with_parser(&json, &mut parser, &mut feeder);
     }
 }
 
@@ -147,9 +147,9 @@ fn utf8() {
 fn too_many_next_event() {
     let json = "{}";
     let mut feeder = PushJsonFeeder::new();
-    let mut parser = JsonParser::new(&mut feeder);
-    assert_json_eq(json, &parse_with_parser(json, &mut parser));
-    assert_eq!(parser.next_event(), JsonEvent::Error);
+    let mut parser = JsonParser::new();
+    assert_json_eq(json, &parse_with_parser(json, &mut parser, &mut feeder));
+    assert_eq!(parser.next_event(&mut feeder), JsonEvent::Error);
 }
 
 /// Make sure a number right before the end of the object can be parsed

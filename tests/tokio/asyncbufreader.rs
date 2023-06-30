@@ -63,14 +63,14 @@ async fn parse_from_file() {
     let mut reader = BufReader::with_capacity(32, file);
 
     let mut feeder = AsyncBufReaderJsonFeeder::new(&mut reader);
-    let mut parser = JsonParser::new(&mut feeder);
+    let mut parser = JsonParser::new();
     let mut prettyprinter = PrettyPrinter::new();
 
     loop {
-        let mut e = parser.next_event();
+        let mut e = parser.next_event(&mut feeder);
         if e == JsonEvent::NeedMoreInput {
-            parser.feeder.fill_buf().await.unwrap();
-            e = parser.next_event();
+            feeder.fill_buf().await.unwrap();
+            e = parser.next_event(&mut feeder);
         }
 
         assert_ne!(e, JsonEvent::Error);

@@ -6,10 +6,7 @@ use crate::{JsonEvent, JsonParser};
 #[derive(Debug, Clone)]
 pub struct ParserError;
 
-fn to_value<T>(event: &JsonEvent, parser: &JsonParser<T>) -> Option<Value>
-where
-    T: JsonFeeder,
-{
+fn to_value(event: &JsonEvent, parser: &JsonParser) -> Option<Value> {
     match event {
         JsonEvent::ValueString => Some(Value::String(parser.current_string().unwrap())),
 
@@ -48,14 +45,14 @@ where
 /// ```
 pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
     let mut feeder = SliceJsonFeeder::new(v);
-    let mut parser = JsonParser::new(&mut feeder);
+    let mut parser = JsonParser::new();
 
     let mut stack = vec![];
     let mut result = None;
     let mut current_key = None;
 
     loop {
-        let event = parser.next_event();
+        let event = parser.next_event(&mut feeder);
         match event {
             JsonEvent::NeedMoreInput => {}
 

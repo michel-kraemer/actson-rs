@@ -130,14 +130,11 @@ impl PrettyPrinter {
         self.result.push_str("null");
     }
 
-    pub fn on_event<T>(
+    pub fn on_event(
         &mut self,
         event: JsonEvent,
-        parser: &JsonParser<T>,
-    ) -> Result<(), Box<dyn Error>>
-    where
-        T: JsonFeeder,
-    {
+        parser: &JsonParser,
+    ) -> Result<(), Box<dyn Error>> {
         match event {
             JsonEvent::NeedMoreInput => {}
             JsonEvent::StartObject => self.on_start_object(),

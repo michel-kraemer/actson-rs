@@ -148,12 +148,7 @@ const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
 
 /// A non-blocking, event-based JSON parser.
-pub struct JsonParser<'a, T>
-where
-    T: JsonFeeder,
-{
-    pub feeder: &'a mut T,
-
+pub struct JsonParser {
     /// The stack containing the current modes
     stack: Vec<i8>,
 
@@ -174,13 +169,9 @@ where
     event2: JsonEvent,
 }
 
-impl<'a, T> JsonParser<'a, T>
-where
-    T: JsonFeeder,
-{
-    pub fn new(feeder: &'a mut T) -> Self {
+impl JsonParser {
+    pub fn new() -> Self {
         JsonParser {
-            feeder,
             stack: vec![MODE_DONE],
             depth: 2048,
             state: GO,
@@ -190,9 +181,8 @@ where
         }
     }
 
-    pub fn new_with_max_depth(feeder: &'a mut T, max_depth: usize) -> Self {
+    pub fn new_with_max_depth(max_depth: usize) -> Self {
         JsonParser {
-            feeder,
             stack: vec![MODE_DONE],
             depth: max_depth,
             state: GO,
@@ -223,9 +213,9 @@ where
     /// Call this method to proceed parsing the JSON text and to get the next
     /// event. The method returns [`JsonEvent::NeedMoreInput`] if it needs
     /// more input data from the given feeder.
-    pub fn next_event(&mut self) -> JsonEvent {
+    pub fn next_event<F: JsonFeeder>(&mut self, feeder: &mut F) -> JsonEvent {
         while self.event1 == JsonEvent::NeedMoreInput {
-            if let Some(b) = self.feeder.next_input() {
+            if let Some(b) = feeder.next_input() {
                 if self.state == ST && (32..=127).contains(&b) && b != b'\\' && b != b'"' {
                     // shortcut
                     self.current_buffer.push(b);
@@ -233,7 +223,7 @@ where
                     self.parse(b);
                 }
             } else {
-                if self.feeder.is_done() {
+                if feeder.is_done() {
                     if self.state != OK {
                         let r = self.state_to_event();
                         if r != JsonEvent::NeedMoreInput {

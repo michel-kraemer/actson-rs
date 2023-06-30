@@ -22,17 +22,17 @@
 //! let json = r#"{"name": "Elvis"}"#.as_bytes();
 //!
 //! let mut feeder = PushJsonFeeder::new();
-//! let mut parser = JsonParser::new(&mut feeder);
+//! let mut parser = JsonParser::new();
 //! let mut i: usize = 0;
 //! loop {
 //!     // feed as many bytes as possible to the parser
-//!     let mut event = parser.next_event();
+//!     let mut event = parser.next_event(&mut feeder);
 //!     while event == JsonEvent::NeedMoreInput {
-//!         i += parser.feeder.push_bytes(&json[i..]);
+//!         i += feeder.push_bytes(&json[i..]);
 //!         if i == json.len() {
-//!             parser.feeder.done();
+//!             feeder.done();
 //!         }
-//!         event = parser.next_event();
+//!         event = parser.next_event(&mut feeder);
 //!     }
 //!
 //!     // do something useful with `event`
@@ -75,12 +75,12 @@
 //!     let mut reader = BufReader::new(file);
 //!
 //!     let mut feeder = AsyncBufReaderJsonFeeder::new(&mut reader);
-//!     let mut parser = JsonParser::new(&mut feeder);
+//!     let mut parser = JsonParser::new();
 //!     loop {
-//!         let mut event = parser.next_event();
+//!         let mut event = parser.next_event(&mut feeder);
 //!         if event == JsonEvent::NeedMoreInput {
-//!             parser.feeder.fill_buf().await.unwrap();
-//!             event = parser.next_event();
+//!             feeder.fill_buf().await.unwrap();
+//!             event = parser.next_event(&mut feeder);
 //!         }
 //!
 //!         // do something useful with `event`
@@ -117,12 +117,12 @@
 //! let mut reader = BufReader::new(file);
 //!
 //! let mut feeder = BufReaderJsonFeeder::new(&mut reader);
-//! let mut parser = JsonParser::new(&mut feeder);
+//! let mut parser = JsonParser::new();
 //! loop {
-//!     let mut event = parser.next_event();
+//!     let mut event = parser.next_event(&mut feeder);
 //!     if event == JsonEvent::NeedMoreInput {
-//!         parser.feeder.fill_buf().unwrap();
-//!         event = parser.next_event();
+//!         feeder.fill_buf().unwrap();
+//!         event = parser.next_event(&mut feeder);
 //!     }
 //!
 //!     // do something useful with `event`
@@ -150,9 +150,9 @@
 //! let json = r#"{"name": "Elvis"}"#.as_bytes();
 //!
 //! let mut feeder = SliceJsonFeeder::new(json);
-//! let mut parser = JsonParser::new(&mut feeder);
+//! let mut parser = JsonParser::new();
 //! loop {
-//!     let event = parser.next_event();
+//!     let event = parser.next_event(&mut feeder);
 //!
 //!     // do something useful with `event`
 //!     // match event {
