@@ -47,8 +47,8 @@ where
 /// assert_eq!(expected, actual);
 /// ```
 pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
-    let mut feeder = SliceJsonFeeder::new(v);
-    let mut parser = JsonParser::new(&mut feeder);
+    let feeder = SliceJsonFeeder::new(v);
+    let mut parser = JsonParser::new(feeder);
 
     let mut stack = vec![];
     let mut result = None;

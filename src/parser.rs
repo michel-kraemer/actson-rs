@@ -148,8 +148,8 @@ const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
 
 /// A non-blocking, event-based JSON parser.
-pub struct JsonParser<'a, T> {
-    pub feeder: &'a mut T,
+pub struct JsonParser<T> {
+    pub feeder: T,
 
     /// The stack containing the current modes
     stack: Vec<i8>,
@@ -171,11 +171,11 @@ pub struct JsonParser<'a, T> {
     event2: JsonEvent,
 }
 
-impl<'a, T> JsonParser<'a, T>
+impl<T> JsonParser<T>
 where
     T: JsonFeeder,
 {
-    pub fn new(feeder: &'a mut T) -> Self {
+    pub fn new(feeder: T) -> Self {
         JsonParser {
             feeder,
             stack: vec![MODE_DONE],
@@ -187,7 +187,7 @@ where
         }
     }
 
-    pub fn new_with_max_depth(feeder: &'a mut T, max_depth: usize) -> Self {
+    pub fn new_with_max_depth(feeder: T, max_depth: usize) -> Self {
         JsonParser {
             feeder,
             stack: vec![MODE_DONE],

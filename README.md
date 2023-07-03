@@ -32,8 +32,8 @@ use actson::feeder::{PushJsonFeeder, JsonFeeder};
 
 let json = r#"{"name": "Elvis"}"#.as_bytes();
 
-let mut feeder = PushJsonFeeder::new();
-let mut parser = JsonParser::new(&mut feeder);
+let feeder = PushJsonFeeder::new();
+let mut parser = JsonParser::new(feeder);
 let mut i: usize = 0;
 loop {
     // feed as many bytes as possible to the parser
@@ -82,10 +82,10 @@ use actson::tokio::AsyncBufReaderJsonFeeder;
 #[tokio::main]
 async fn main() {
     let file = File::open("tests/fixtures/pass1.txt").await.unwrap();
-    let mut reader = BufReader::new(file);
+    let reader = BufReader::new(file);
 
-    let mut feeder = AsyncBufReaderJsonFeeder::new(&mut reader);
-    let mut parser = JsonParser::new(&mut feeder);
+    let feeder = AsyncBufReaderJsonFeeder::new(reader);
+    let mut parser = JsonParser::new(feeder);
     loop {
         let mut event = parser.next_event();
         if event == JsonEvent::NeedMoreInput {
@@ -122,10 +122,10 @@ use std::fs::File;
 use std::io::BufReader;
 
 let file = File::open("tests/fixtures/pass1.txt").unwrap();
-let mut reader = BufReader::new(file);
+let reader = BufReader::new(file);
 
-let mut feeder = actson::feeder::BufReaderJsonFeeder::new(&mut reader);
-let mut parser = JsonParser::new(&mut feeder);
+let feeder = actson::feeder::BufReaderJsonFeeder::new(reader);
+let mut parser = JsonParser::new(feeder);
 loop {
     let mut event = parser.next_event();
     if event == JsonEvent::NeedMoreInput {
@@ -157,8 +157,8 @@ use actson::feeder::SliceJsonFeeder;
 
 let json = r#"{"name": "Elvis"}"#.as_bytes();
 
-let mut feeder = SliceJsonFeeder::new(json);
-let mut parser = JsonParser::new(&mut feeder);
+let feeder = SliceJsonFeeder::new(json);
+let mut parser = JsonParser::new(feeder);
 loop {
     let event = parser.next_event();
 

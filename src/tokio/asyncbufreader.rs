@@ -2,17 +2,17 @@ use crate::feeder::JsonFeeder;
 use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 
 /// A [`JsonFeeder`] that reads from an asynchronous [`BufReader`].
-pub struct AsyncBufReaderJsonFeeder<'a, T> {
-    reader: &'a mut BufReader<T>,
+pub struct AsyncBufReaderJsonFeeder<T> {
+    reader: BufReader<T>,
     filled: bool,
     pos: usize,
 }
 
-impl<'a, T> AsyncBufReaderJsonFeeder<'a, T>
+impl<T> AsyncBufReaderJsonFeeder<T>
 where
     T: AsyncRead + Unpin,
 {
-    pub fn new(reader: &'a mut BufReader<T>) -> Self {
+    pub fn new(reader: BufReader<T>) -> Self {
         AsyncBufReaderJsonFeeder {
             reader,
             filled: false,
@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<'a, T> JsonFeeder for AsyncBufReaderJsonFeeder<'a, T>
+impl<T> JsonFeeder for AsyncBufReaderJsonFeeder<T>
 where
     T: AsyncRead + Unpin,
 {

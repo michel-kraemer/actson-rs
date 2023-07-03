@@ -3,17 +3,17 @@ use std::io::{BufRead, BufReader, Read};
 use super::JsonFeeder;
 
 /// A [`JsonFeeder`] that reads from a [`BufReader`].
-pub struct BufReaderJsonFeeder<'a, T> {
-    reader: &'a mut BufReader<T>,
+pub struct BufReaderJsonFeeder<T> {
+    reader: BufReader<T>,
     filled: bool,
     pos: usize,
 }
 
-impl<'a, T> BufReaderJsonFeeder<'a, T>
+impl<T> BufReaderJsonFeeder<T>
 where
     T: Read,
 {
-    pub fn new(reader: &'a mut BufReader<T>) -> Self {
+    pub fn new(reader: BufReader<T>) -> Self {
         BufReaderJsonFeeder {
             reader,
             filled: false,
@@ -30,7 +30,7 @@ where
     }
 }
 
-impl<'a, T> JsonFeeder for BufReaderJsonFeeder<'a, T>
+impl<T> JsonFeeder for BufReaderJsonFeeder<T>
 where
     T: Read,
 {

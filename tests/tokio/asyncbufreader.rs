@@ -17,9 +17,9 @@ async fn read_from_file() {
     }
 
     let file = File::open("tests/fixtures/pass1.txt").await.unwrap();
-    let mut reader = BufReader::with_capacity(32, file);
+    let reader = BufReader::with_capacity(32, file);
 
-    let mut feeder = AsyncBufReaderJsonFeeder::new(&mut reader);
+    let mut feeder = AsyncBufReaderJsonFeeder::new(reader);
 
     assert!(!feeder.has_input());
     assert!(!feeder.is_done());
@@ -60,10 +60,10 @@ async fn parse_from_file() {
     }
 
     let file = File::open("tests/fixtures/pass1.txt").await.unwrap();
-    let mut reader = BufReader::with_capacity(32, file);
+    let reader = BufReader::with_capacity(32, file);
 
-    let mut feeder = AsyncBufReaderJsonFeeder::new(&mut reader);
-    let mut parser = JsonParser::new(&mut feeder);
+    let feeder = AsyncBufReaderJsonFeeder::new(reader);
+    let mut parser = JsonParser::new(feeder);
     let mut prettyprinter = PrettyPrinter::new();
 
     loop {
