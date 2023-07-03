@@ -3,10 +3,7 @@ use std::io::{BufRead, BufReader, Read};
 use super::JsonFeeder;
 
 /// A [`JsonFeeder`] that reads from a [`BufReader`].
-pub struct BufReaderJsonFeeder<'a, T>
-where
-    T: Read,
-{
+pub struct BufReaderJsonFeeder<'a, T> {
     reader: &'a mut BufReader<T>,
     filled: bool,
     pos: usize,

@@ -148,10 +148,7 @@ const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
 
 /// A non-blocking, event-based JSON parser.
-pub struct JsonParser<'a, T>
-where
-    T: JsonFeeder,
-{
+pub struct JsonParser<'a, T> {
     pub feeder: &'a mut T,
 
     /// The stack containing the current modes
