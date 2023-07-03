@@ -431,8 +431,8 @@ where
         }
     }
 
-    pub fn current_string(&self) -> Result<String, Utf8Error> {
-        Ok(from_utf8(&self.current_buffer)?.to_string())
+    pub fn current_string(&self) -> Result<&str, Utf8Error> {
+        from_utf8(&self.current_buffer)
     }
 
     pub fn current_i32(&self) -> Result<i32, Box<dyn Error>> {

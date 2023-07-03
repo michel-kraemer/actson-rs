@@ -11,7 +11,7 @@ where
     T: JsonFeeder,
 {
     match event {
-        JsonEvent::ValueString => Some(Value::String(parser.current_string().unwrap())),
+        JsonEvent::ValueString => Some(Value::String(parser.current_string().unwrap().to_string())),
 
         JsonEvent::ValueInt => {
             if let Ok(i) = parser.current_i32() {
@@ -84,7 +84,9 @@ pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
                 }
             }
 
-            JsonEvent::FieldName => current_key = Some(parser.current_string().unwrap()),
+            JsonEvent::FieldName => {
+                current_key = Some(parser.current_string().unwrap().to_string())
+            }
 
             JsonEvent::ValueString
             | JsonEvent::ValueInt

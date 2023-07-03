@@ -144,8 +144,8 @@ impl PrettyPrinter {
             JsonEvent::EndObject => self.on_end_object(),
             JsonEvent::StartArray => self.on_start_array(),
             JsonEvent::EndArray => self.on_end_array(),
-            JsonEvent::FieldName => self.on_field_name(&parser.current_string()?),
-            JsonEvent::ValueString => self.on_value_string(&parser.current_string()?),
+            JsonEvent::FieldName => self.on_field_name(parser.current_string()?),
+            JsonEvent::ValueString => self.on_value_string(parser.current_string()?),
             JsonEvent::ValueInt => {
                 if let Ok(i) = parser.current_i32() {
                     self.on_value_i32(i);
