@@ -1,4 +1,5 @@
-use ringbuffer::{AllocRingBuffer, RingBuffer, RingBufferRead, RingBufferWrite};
+use std::cmp::min;
+use std::collections::VecDeque;
 
 use super::{FeedError, JsonFeeder};
 
@@ -14,14 +15,14 @@ use super::{FeedError, JsonFeeder};
 /// Repeat pushing and parsing until all input data has been consumed. Finally,
 /// call [`done()`](Self::done()) to indicate the end of the JSON text.
 pub struct PushJsonFeeder {
-    input: AllocRingBuffer<u8>,
+    input: VecDeque<u8>,
     done: bool,
 }
 
 impl PushJsonFeeder {
     pub fn new() -> Self {
         PushJsonFeeder {
-            input: AllocRingBuffer::with_capacity(1024),
+            input: VecDeque::with_capacity(1024),
             done: false,
         }
     }
@@ -32,7 +33,7 @@ impl PushJsonFeeder {
         if self.is_full() {
             return Err(FeedError::Full);
         }
-        self.input.push(b);
+        self.input.push_back(b);
         Ok(())
     }
 
@@ -43,12 +44,9 @@ impl PushJsonFeeder {
     /// of bytes consumed (which can be 0 if the parser does not accept more
     /// input at the moment).
     pub fn push_bytes(&mut self, buf: &[u8]) -> usize {
-        let mut result: usize = 0;
-        while result < buf.len() && !self.input.is_full() {
-            self.input.push(buf[result]);
-            result += 1;
-        }
-        result
+        let n = min(buf.len(), self.input.capacity() - self.input.len());
+        self.input.extend(buf.iter().take(n));
+        n
     }
 
     /// Checks if the parser accepts more input at the moment. If it doesn't,
@@ -56,7 +54,7 @@ impl PushJsonFeeder {
     /// until it returns [`JsonEvent::NeedMoreInput`](crate::JsonEvent::NeedMoreInput).
     /// Only then, new input can be provided to the parser.
     pub fn is_full(&self) -> bool {
-        self.input.is_full()
+        self.input.len() == self.input.capacity()
     }
 
     /// Call this method to indicate that the end of the JSON text has been
@@ -82,13 +80,13 @@ impl JsonFeeder for PushJsonFeeder {
     }
 
     fn next_input(&mut self) -> Option<u8> {
-        self.input.dequeue()
+        self.input.pop_front()
     }
 }
 
 #[cfg(test)]
 mod test {
-    use ringbuffer::AllocRingBuffer;
+    use std::collections::VecDeque;
 
     use crate::feeder::{JsonFeeder, PushJsonFeeder};
 
@@ -114,7 +112,7 @@ mod test {
     #[test]
     fn is_full() {
         let mut feeder = PushJsonFeeder {
-            input: AllocRingBuffer::with_capacity(16),
+            input: VecDeque::with_capacity(16),
             done: false,
         };
         for i in 0..16 {
@@ -128,7 +126,7 @@ mod test {
     #[test]
     fn feed_buf() {
         let mut feeder = PushJsonFeeder {
-            input: AllocRingBuffer::with_capacity(16),
+            input: VecDeque::with_capacity(16),
             done: false,
         };
         let buf = "abcd".as_bytes();
@@ -176,7 +174,7 @@ mod test {
     #[test]
     fn too_full() {
         let mut feeder = PushJsonFeeder {
-            input: AllocRingBuffer::with_capacity(16),
+            input: VecDeque::with_capacity(16),
             done: false,
         };
         for i in 0..16 {
@@ -209,7 +207,7 @@ mod test {
     #[test]
     fn short_string() {
         let mut feeder = PushJsonFeeder {
-            input: AllocRingBuffer::with_capacity(16),
+            input: VecDeque::with_capacity(16),
             done: false,
         };
         assert_buf_eq(b"abcdef", &mut feeder);
@@ -220,7 +218,7 @@ mod test {
     #[test]
     fn long_string() {
         let mut feeder = PushJsonFeeder {
-            input: AllocRingBuffer::with_capacity(16),
+            input: VecDeque::with_capacity(16),
             done: false,
         };
         assert_buf_eq(b"abcdefghijklmnopqrstuvwxyz", &mut feeder);
@@ -231,7 +229,7 @@ mod test {
     #[test]
     fn very_long_string() {
         let mut feeder = PushJsonFeeder {
-            input: AllocRingBuffer::with_capacity(16),
+            input: VecDeque::with_capacity(16),
             done: false,
         };
         assert_buf_eq(

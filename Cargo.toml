@@ -16,7 +16,6 @@ serde_json = ["dep:serde_json"]
 
 [dependencies]
 lexical = "6.1.1"
-ringbuffer = "0.14.1"
 serde_json = { version = "1.0.99", features = ["float_roundtrip"], optional = true }
 tokio = { version = "1.29.0", features = ["io-util", "rt-multi-thread"], optional = true }
 
