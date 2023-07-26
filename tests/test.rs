@@ -77,21 +77,21 @@ fn parse_fail_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) {
 }
 
 /// Parse the given JSON string and check if the parser returns the correct number
-/// of consumed bytes for each event produced.
+/// of consumed bytes for each event produced
 fn parse_checking_consumed_bytes(json: &str, events_bytes: &[(JsonEvent, usize)]) {
     let buf = json.as_bytes();
     let mut parser = JsonParser::new(PushJsonFeeder::new());
     for (event, bytes) in events_bytes.iter().cloned() {
         let parsed_bytes = parser.parsed_bytes();
-        let next_event = parse_till_next_event(&buf[parsed_bytes..], &mut parser);
+        let next_event = parse_until_next_event(&buf[parsed_bytes..], &mut parser);
         let parsed_bytes = parser.parsed_bytes();
         assert_eq!(next_event, event);
         assert_eq!(parsed_bytes, bytes);
     }
 }
 
-/// Parse the given JSON string and return the next event produced by the parser.
-fn parse_till_next_event(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) -> JsonEvent {
+/// Parse the given JSON string and return the next event produced by the parser
+fn parse_until_next_event(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) -> JsonEvent {
     let mut i: usize = 0;
     let mut event = parser.next_event();
     while event == JsonEvent::NeedMoreInput {

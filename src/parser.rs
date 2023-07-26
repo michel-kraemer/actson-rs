@@ -170,7 +170,7 @@ pub struct JsonParser<T> {
     /// The second event returned by [`Self::parse()`]
     event2: JsonEvent,
 
-    /// Tracks the amount of bytes that have been processed
+    /// Tracks the number of bytes that have been processed
     parsed_bytes: usize,
 }
 
