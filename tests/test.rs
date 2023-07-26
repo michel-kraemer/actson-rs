@@ -76,6 +76,34 @@ fn parse_fail_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) {
     assert!(!ok);
 }
 
+/// Parse the given JSON string and check if the parser returns the correct number
+/// of consumed bytes for each event produced.
+fn parse_checking_consumed_bytes(json: &str, events_bytes: &[(JsonEvent, usize)]) {
+    let buf = json.as_bytes();
+    let mut parser = JsonParser::new(PushJsonFeeder::new());
+    for (event, bytes) in events_bytes.iter().cloned() {
+        let parsed_bytes = parser.parsed_bytes();
+        let next_event = parse_till_next_event(&buf[parsed_bytes..], &mut parser);
+        let parsed_bytes = parser.parsed_bytes();
+        assert_eq!(next_event, event);
+        assert_eq!(parsed_bytes, bytes);
+    }
+}
+
+/// Parse the given JSON string and return the next event produced by the parser.
+fn parse_till_next_event(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) -> JsonEvent {
+    let mut i: usize = 0;
+    let mut event = parser.next_event();
+    while event == JsonEvent::NeedMoreInput {
+        i += parser.feeder.push_bytes(&json[i..]);
+        if i == json.len() {
+            parser.feeder.done();
+        }
+        event = parser.next_event();
+    }
+    event
+}
+
 fn assert_json_eq(expected: &str, actual: &str) {
     let em: Value = serde_json::from_str(expected).unwrap();
     let am: Value = serde_json::from_str(actual).unwrap();
@@ -220,4 +248,53 @@ fn number_and_eof() {
 fn top_level_zero() {
     let json = r#"0"#;
     assert_json_eq(json, &parse(json));
+}
+
+/// Test if the parser returns an accurate amount when calling the `parsed_bytes()` method
+#[test]
+fn number_of_processed_bytes() {
+    //                 16
+    //  1     7        |17
+    //  ↓     ↓        ↓↓
+    //  {"name": "Elvis"}
+    let json = r#"{"name": "Elvis"}"#;
+    // the events and the corresponding bytes that are processed to produces them
+    let events_bytes = [
+        (JsonEvent::StartObject, 1),
+        (JsonEvent::FieldName, 7),
+        (JsonEvent::ValueString, 16),
+        (JsonEvent::EndObject, 17),
+        (JsonEvent::Eof, 17),
+    ];
+    parse_checking_consumed_bytes(json, &events_bytes);
+
+    // 1      8     14    20      28
+    // ↓      ↓     ↓     ↓       ↓
+    // ["Elvis", 132, "Max", 80.67]
+    let json = r#"["Elvis", 132, "Max", 80.67]"#;
+    let events_bytes = [
+        (JsonEvent::StartArray, 1),
+        (JsonEvent::ValueString, 8),
+        (JsonEvent::ValueInt, 14),
+        (JsonEvent::ValueString, 20),
+        (JsonEvent::ValueDouble, 28),
+        (JsonEvent::EndArray, 28),
+        (JsonEvent::Eof, 28),
+    ];
+    parse_checking_consumed_bytes(json, &events_bytes);
+
+    // œ is encoded as: 0xC5 0x93, so it is 2 bytes long
+    //                17
+    // 1     7        |18
+    // ↓     ↓        ↓↓
+    // {"name": "Bjœrn"}
+    let json = "{\"name\": \"Bj\u{0153}rn\"}";
+    let events_bytes = [
+        (JsonEvent::StartObject, 1),
+        (JsonEvent::FieldName, 7),
+        (JsonEvent::ValueString, 17),
+        (JsonEvent::EndObject, 18),
+        (JsonEvent::Eof, 18),
+    ];
+    parse_checking_consumed_bytes(json, &events_bytes);
 }
