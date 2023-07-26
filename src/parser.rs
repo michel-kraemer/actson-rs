@@ -169,6 +169,9 @@ pub struct JsonParser<T> {
 
     /// The second event returned by [`Self::parse()`]
     event2: JsonEvent,
+
+    /// Tracks the amount of bytes that have been processed
+    parsed_bytes: usize,
 }
 
 impl<T> JsonParser<T>
@@ -184,6 +187,7 @@ where
             current_buffer: vec![],
             event1: JsonEvent::NeedMoreInput,
             event2: JsonEvent::NeedMoreInput,
+            parsed_bytes: 0,
         }
     }
 
@@ -196,6 +200,7 @@ where
             current_buffer: vec![],
             event1: JsonEvent::NeedMoreInput,
             event2: JsonEvent::NeedMoreInput,
+            parsed_bytes: 0,
         }
     }
 
@@ -223,6 +228,7 @@ where
     pub fn next_event(&mut self) -> JsonEvent {
         while self.event1 == JsonEvent::NeedMoreInput {
             if let Some(b) = self.feeder.next_input() {
+                self.parsed_bytes += 1;
                 if self.state == ST && (32..=127).contains(&b) && b != b'\\' && b != b'"' {
                     // shortcut
                     self.current_buffer.push(b);
@@ -445,5 +451,9 @@ where
 
     pub fn current_f64(&self) -> Result<f64, Box<dyn Error>> {
         lexical::parse(&self.current_buffer).map_err(|e| e.into())
+    }
+
+    pub fn parsed_bytes(&self) -> usize {
+        self.parsed_bytes
     }
 }
