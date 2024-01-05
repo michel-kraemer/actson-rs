@@ -1,4 +1,5 @@
 use std::{
+    collections::VecDeque,
     error::Error,
     str::{from_utf8, Utf8Error},
 };
@@ -152,7 +153,7 @@ pub struct JsonParser<T> {
     pub feeder: T,
 
     /// The stack containing the current modes
-    stack: Vec<i8>,
+    stack: VecDeque<i8>,
 
     /// The maximum number of modes on the stack
     depth: usize,
@@ -181,7 +182,7 @@ where
     pub fn new(feeder: T) -> Self {
         JsonParser {
             feeder,
-            stack: vec![MODE_DONE],
+            stack: VecDeque::from([MODE_DONE]),
             depth: 2048,
             state: GO,
             current_buffer: vec![],
@@ -194,7 +195,7 @@ where
     pub fn new_with_max_depth(feeder: T, max_depth: usize) -> Self {
         JsonParser {
             feeder,
-            stack: vec![MODE_DONE],
+            stack: VecDeque::from([MODE_DONE]),
             depth: max_depth,
             state: GO,
             current_buffer: vec![],
@@ -208,17 +209,17 @@ where
         if self.stack.len() >= self.depth {
             return false;
         }
-        self.stack.push(mode);
+        self.stack.push_back(mode);
         true
     }
 
     /// Pop the stack, assuring that the current mode matches the expectation.
     /// Returns `false` if there is underflow or if the modes mismatch.
     fn pop(&mut self, mode: i8) -> bool {
-        if self.stack.is_empty() || *self.stack.last().unwrap() != mode {
+        if self.stack.is_empty() || *self.stack.back().unwrap() != mode {
             return false;
         }
-        self.stack.pop();
+        self.stack.pop_back();
         true
     }
 
@@ -373,7 +374,7 @@ where
 
             // "
             -4 => {
-                if *self.stack.last().unwrap() == MODE_KEY {
+                if *self.stack.back().unwrap() == MODE_KEY {
                     self.state = CO;
                     self.event1 = JsonEvent::FieldName;
                 } else {
@@ -384,7 +385,7 @@ where
 
             // ,
             -3 => {
-                match *self.stack.last().unwrap() {
+                match *self.stack.back().unwrap() {
                     MODE_OBJECT => {
                         // A comma causes a flip from object mode to key mode.
                         if !self.pop(MODE_OBJECT) || !self.push(MODE_KEY) {
