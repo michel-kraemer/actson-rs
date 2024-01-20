@@ -5,8 +5,8 @@ extern crate afl;
 
 fn main() {
     fuzz!(|data: &[u8]| {
-        let mut feeder = PushJsonFeeder::new();
-        let mut parser = JsonParser::new(&mut feeder);
+        let feeder = PushJsonFeeder::new();
+        let mut parser = JsonParser::new(feeder);
         let mut i: usize = 0;
         loop {
             let mut e = parser.next_event();
