@@ -69,7 +69,7 @@ parse the JSON document and to produce events. Whenever you get
 to asynchronously read more bytes from the input and to provide them to
 the parser.
 
-*Heads up:* The `tokio` feature has to be enabled for this. It is enabled
+*Heads up:* The `tokio` feature has to be enabled for this. It is disabled
 by default.
 
 ```rust

@@ -269,7 +269,7 @@ where
     /// As a precondition, these fields should have a value of [`JsonEvent::NeedMoreInput`].
     fn parse(&mut self, next_char: u8) {
         // determine the character's class.
-        let next_class: i8;
+        let next_class;
         if next_char >= 128 {
             next_class = C_ETC;
         } else {

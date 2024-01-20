@@ -10,7 +10,7 @@ keywords = ["json", "parser", "parsing", "deserialization"]
 categories = ["encoding", "parser-implementations"]
 
 [features]
-default = ["tokio"]
+default = []
 tokio = ["dep:tokio"]
 serde_json = ["dep:serde_json"]
 
