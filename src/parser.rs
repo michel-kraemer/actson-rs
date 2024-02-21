@@ -1,6 +1,7 @@
 use std::{
     collections::VecDeque,
     error::Error,
+    num::ParseFloatError,
     str::{from_utf8, Utf8Error},
 };
 
@@ -443,15 +444,17 @@ where
     }
 
     pub fn current_i32(&self) -> Result<i32, Box<dyn Error>> {
-        lexical::parse(&self.current_buffer).map_err(|e| e.into())
+        btoi::btoi(&self.current_buffer).map_err(|e| e.into())
     }
 
     pub fn current_i64(&self) -> Result<i64, Box<dyn Error>> {
-        lexical::parse(&self.current_buffer).map_err(|e| e.into())
+        btoi::btoi(&self.current_buffer).map_err(|e| e.into())
     }
 
     pub fn current_f64(&self) -> Result<f64, Box<dyn Error>> {
-        lexical::parse(&self.current_buffer).map_err(|e| e.into())
+        self.current_string()?
+            .parse()
+            .map_err(|e: ParseFloatError| e.into())
     }
 
     pub fn parsed_bytes(&self) -> usize {
