@@ -17,13 +17,13 @@ serde_json = ["dep:serde_json"]
 [dependencies]
 btoi = "0.4.3"
 serde_json = { version = "1.0.111", features = ["float_roundtrip"], optional = true }
-tokio = { version = "1.35.1", features = ["io-util", "rt-multi-thread"], optional = true }
+tokio = { version = "1.36.0", features = ["io-util", "rt-multi-thread"], optional = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
 dtoa = "1.0.9"
 serde_json = { version = "1.0.111", features = ["float_roundtrip"] }
-tokio = { version = "1.35.1", features = ["fs", "macros", "rt-multi-thread"]}
+tokio = { version = "1.36.0", features = ["fs", "macros", "rt-multi-thread"]}
 
 [[bench]]
 name = "bench"
