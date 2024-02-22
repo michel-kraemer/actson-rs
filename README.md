@@ -217,6 +217,10 @@ based on the file [JSON_checker.c](http://www.json.org/JSON_checker/) and
 the JSON test suite from [JSON.org](http://www.json.org/) originally released
 under [this license](LICENSE_JSON_checker) (basically MIT license).
 
+The directory `tests/json_test_suite` is a Git submodule pointing to the
+[JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite/) curated by
+Nicolas Seriot and released under the MIT license.
+
 ## License
 
 Actson is released under the **MIT license**. See the
