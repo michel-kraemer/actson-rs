@@ -45,21 +45,19 @@ fn parse_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) -> Str
 }
 
 /// Parse a JSON string and expect parsing to fail
-fn parse_fail(json: &str) {
+fn parse_fail(json: &[u8]) {
     let feeder = PushJsonFeeder::new();
     parse_fail_with_parser(json, &mut JsonParser::new(feeder));
 }
 
-fn parse_fail_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) {
-    let buf = json.as_bytes();
-
+fn parse_fail_with_parser(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) {
     let mut i: usize = 0;
     let mut ok: bool;
     loop {
         // feed as many bytes as possible to the parser
         let mut e = parser.next_event();
         while e == JsonEvent::NeedMoreInput {
-            i += parser.feeder.push_bytes(&buf[i..]);
+            i += parser.feeder.push_bytes(&json[i..]);
             if i == json.len() {
                 parser.feeder.done();
             }
@@ -81,7 +79,7 @@ fn parse_fail_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) {
 fn parse_checking_consumed_bytes(json: &str, events_bytes: &[(JsonEvent, usize)]) {
     let buf = json.as_bytes();
     let mut parser = JsonParser::new(PushJsonFeeder::new());
-    for (event, bytes) in events_bytes.iter().cloned() {
+    for &(event, bytes) in events_bytes {
         let parsed_bytes = parser.parsed_bytes();
         let next_event = parse_until_next_event(&buf[parsed_bytes..], &mut parser);
         let parsed_bytes = parser.parsed_bytes();
@@ -125,7 +123,7 @@ fn test_fail() {
     let mut parser = JsonParser::new_with_max_depth(feeder, 16);
     for i in 2..=34 {
         let json = fs::read_to_string(format!("tests/fixtures/fail{}.txt", i)).unwrap();
-        parse_fail_with_parser(&json, &mut parser);
+        parse_fail_with_parser(json.as_bytes(), &mut parser);
     }
 }
 
@@ -198,7 +196,7 @@ fn fraction() {
 #[test]
 fn illegal_number() {
     let json = r#"{"n":-2.}"#;
-    parse_fail(json);
+    parse_fail(json.as_bytes());
 }
 
 /// Make sure '0e1' can be parsed
@@ -240,7 +238,7 @@ fn top_level_long() {
 #[test]
 fn number_and_eof() {
     let json = r#"{"i":42"#;
-    parse_fail(json);
+    parse_fail(json.as_bytes());
 }
 
 /// Test if a top-level zero can be parsed
@@ -297,4 +295,37 @@ fn number_of_processed_bytes() {
         (JsonEvent::Eof, 18),
     ];
     parse_checking_consumed_bytes(json, &events_bytes);
+}
+
+/// Test if the parser is able to process all valid files from the test suite
+#[test]
+fn test_suite_pass() {
+    let files = fs::read_dir("tests/json_test_suite/test_parsing").unwrap();
+    for f in files {
+        let f = f.unwrap();
+        let name = f.file_name();
+        if name.to_str().unwrap().starts_with('y') {
+            let json = fs::read_to_string(f.path()).unwrap();
+            if name == "y_number_minus_zero.json" || name == "y_number_negative_zero.json" {
+                // -0 equals 0
+                assert_eq!("[\n  0\n]", &parse(&json));
+            } else {
+                assert_json_eq(&json, &parse(&json));
+            }
+        }
+    }
+}
+
+/// Test if the parser actually fails to process each invalid file from the test suite
+#[test]
+fn test_suite_fail() {
+    let files = fs::read_dir("tests/json_test_suite/test_parsing").unwrap();
+    for f in files {
+        let f = f.unwrap();
+        let name = f.file_name();
+        if name.to_str().unwrap().starts_with('n') {
+            let json = fs::read(f.path()).unwrap();
+            parse_fail(&json);
+        }
+    }
 }

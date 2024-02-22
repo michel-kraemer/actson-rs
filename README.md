@@ -196,6 +196,16 @@ However, if you find yourself doing this, you probably don't need the reactive
 features of Actson and your data seems to completely fit into memory. In this
 case, you're most likely better off using Serde JSON directly.
 
+## Compliance
+
+We test Actson thoroughly to make sure it is compliant with [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259),
+can parse valid JSON documents, and rejects invalid ones.
+
+Besides own unit tests, Actson passes the tests from
+[JSON_checker.c](http://www.json.org/JSON_checker/) (see Acknowledgments below)
+and all 283 accept and reject tests from the very comprehensive
+[JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite/).
+
 ## Other languages
 
 Besides this implementation in Rust here, there is a [Java implementation](https://github.com/michel-kraemer/actson).

@@ -1,0 +1,3 @@
+[submodule "tests/json_test_suite"]
+	path = tests/json_test_suite
+	url = https://github.com/nst/JSONTestSuite.git
