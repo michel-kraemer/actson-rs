@@ -3,7 +3,7 @@ use std::fs;
 use criterion::{criterion_group, criterion_main, Criterion};
 use serde_json::Value;
 
-use actson::serde_json::from_slice;
+use actson::{feeder::SliceJsonFeeder, serde_json::from_slice, JsonEvent, JsonParser};
 
 fn make_large(json: &str) -> String {
     let mut large = String::from("{");
@@ -18,6 +18,29 @@ fn make_large(json: &str) -> String {
     large
 }
 
+fn consume(json_bytes: &[u8]) {
+    let feeder = SliceJsonFeeder::new(json_bytes);
+    let mut parser = JsonParser::new(feeder);
+    loop {
+        let e = parser.next_event();
+
+        // fetch each value at least once
+        match e {
+            JsonEvent::FieldName | JsonEvent::ValueString => {
+                parser.current_string().unwrap();
+            }
+            JsonEvent::ValueInt => {
+                parser.current_i64().unwrap();
+            }
+            JsonEvent::ValueDouble => {
+                parser.current_f64().unwrap();
+            }
+            JsonEvent::Eof => break,
+            _ => {}
+        }
+    }
+}
+
 fn actson_benchmark(c: &mut Criterion) {
     let json = fs::read_to_string("tests/fixtures/pass1.txt").unwrap();
     let json_bytes = json.as_bytes();
@@ -27,11 +50,39 @@ fn actson_benchmark(c: &mut Criterion) {
 
     c.bench_function("actson", |b| {
         b.iter(|| {
-            from_slice(json_bytes).unwrap();
+            consume(json_bytes);
         })
     });
 
     c.bench_function("actson_large", |b| {
+        b.iter(|| {
+            consume(json_large_bytes);
+        })
+    });
+
+    c.bench_function("actson_novalues", |b| {
+        b.iter(|| {
+            let feeder = SliceJsonFeeder::new(json_bytes);
+            let mut parser = JsonParser::new(feeder);
+            while parser.next_event() != JsonEvent::Eof {}
+        })
+    });
+
+    c.bench_function("actson_novalues_large", |b| {
+        b.iter(|| {
+            let feeder = SliceJsonFeeder::new(json_large_bytes);
+            let mut parser = JsonParser::new(feeder);
+            while parser.next_event() != JsonEvent::Eof {}
+        })
+    });
+
+    c.bench_function("actson_serde", |b| {
+        b.iter(|| {
+            from_slice(json_bytes).unwrap();
+        })
+    });
+
+    c.bench_function("actson_serde_large", |b| {
         b.iter(|| {
             from_slice(json_large_bytes).unwrap();
         })
