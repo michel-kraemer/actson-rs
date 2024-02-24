@@ -146,7 +146,7 @@ impl PrettyPrinter {
             JsonEvent::FieldName => self.on_field_name(parser.current_string()?),
             JsonEvent::ValueString => self.on_value_string(parser.current_string()?),
             JsonEvent::ValueInt => self.on_value_int(parser.current_int::<i64>()?),
-            JsonEvent::ValueFloat => self.on_value_float(parser.current_f64()?),
+            JsonEvent::ValueFloat => self.on_value_float(parser.current_float()?),
             JsonEvent::ValueTrue => self.on_value_boolean(true),
             JsonEvent::ValueFalse => self.on_value_boolean(false),
             JsonEvent::ValueNull => self.on_value_null(),

@@ -451,7 +451,7 @@ where
         btoi::btoi(&self.current_buffer).map_err(|e| e.into())
     }
 
-    pub fn current_f64(&self) -> Result<f64, Box<dyn Error>> {
+    pub fn current_float(&self) -> Result<f64, Box<dyn Error>> {
         self.current_string()?
             .parse()
             .map_err(|e: ParseFloatError| e.into())

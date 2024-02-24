@@ -18,7 +18,7 @@ where
         ))),
 
         JsonEvent::ValueFloat => Some(Value::Number(
-            Number::from_f64(parser.current_f64().unwrap()).unwrap(),
+            Number::from_f64(parser.current_float().unwrap()).unwrap(),
         )),
 
         JsonEvent::ValueTrue => Some(Value::Bool(true)),
