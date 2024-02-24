@@ -40,7 +40,7 @@
 //!     //     ...
 //!     // }
 //!
-//!     assert_ne!(event, JsonEvent::Error);
+//!     assert!(!matches!(event, JsonEvent::Error(_)));
 //!
 //!     if event == JsonEvent::Eof {
 //!         break;
@@ -88,7 +88,7 @@
 //!         //     ...
 //!         // }
 //!
-//!         assert_ne!(event, JsonEvent::Error);
+//!         assert!(!matches!(event, JsonEvent::Error(_)));
 //!
 //!         if event == JsonEvent::Eof {
 //!             break;
@@ -130,7 +130,7 @@
 //!     //     ...
 //!     // }
 //!
-//!     assert_ne!(event, JsonEvent::Error);
+//!     assert!(!matches!(event, JsonEvent::Error(_)));
 //!
 //!     if event == JsonEvent::Eof {
 //!         break;
@@ -159,7 +159,7 @@
 //!     //     ...
 //!     // }
 //!
-//!     assert_ne!(event, JsonEvent::Error);
+//!     assert!(!matches!(event, JsonEvent::Error(_)));
 //!
 //!     if event == JsonEvent::Eof {
 //!         break;
@@ -188,9 +188,9 @@
 //! reactive features of Actson and your data seems to completely fit into
 //! memory. In this case, you're most likely better off using Serde JSON
 //! directly.
-mod event;
+pub mod event;
 pub mod feeder;
-mod parser;
+pub mod parser;
 
 #[cfg(feature = "tokio")]
 pub mod tokio;
@@ -199,6 +199,4 @@ pub mod tokio;
 pub mod serde_json;
 
 pub use event::JsonEvent;
-pub use parser::{
-    InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError, JsonParser,
-};
+pub use parser::JsonParser;

@@ -4,7 +4,7 @@ use std::{
     str::{from_utf8, Utf8Error},
 };
 
-use crate::{event::JsonEvent, feeder::JsonFeeder};
+use crate::{event::ParseErrorKind, feeder::JsonFeeder, JsonEvent};
 use btoi::ParseIntegerError;
 use num_traits::{CheckedAdd, CheckedMul, CheckedSub, FromPrimitive, Zero};
 use thiserror::Error;
@@ -271,7 +271,7 @@ where
                     return if self.state == OK && self.pop(MODE_DONE) {
                         JsonEvent::Eof
                     } else {
-                        JsonEvent::Error
+                        JsonEvent::Error(ParseErrorKind::NoMoreInput)
                     };
                 }
                 return JsonEvent::NeedMoreInput;
@@ -279,7 +279,7 @@ where
         }
 
         let r = self.event1;
-        if self.event1 != JsonEvent::Error {
+        if !matches!(self.event1, JsonEvent::Error(_)) {
             self.event1 = self.event2;
             self.event2 = JsonEvent::NeedMoreInput;
         }
@@ -298,7 +298,7 @@ where
         } else {
             next_class = ASCII_CLASS[next_char as usize];
             if next_class <= __ {
-                self.event1 = JsonEvent::Error;
+                self.event1 = JsonEvent::Error(ParseErrorKind::IllegalCharacter);
                 return;
             }
         }
@@ -338,7 +338,7 @@ where
             // empty }
             -9 => {
                 if !self.pop(MODE_KEY) {
-                    self.event1 = JsonEvent::Error;
+                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
                     return;
                 }
                 self.state = OK;
@@ -348,7 +348,7 @@ where
             // }
             -8 => {
                 if !self.pop(MODE_OBJECT) {
-                    self.event1 = JsonEvent::Error;
+                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
                     return;
                 }
                 self.event1 = self.state_to_event();
@@ -363,7 +363,7 @@ where
             // ]
             -7 => {
                 if !self.pop(MODE_ARRAY) {
-                    self.event1 = JsonEvent::Error;
+                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
                     return;
                 }
                 self.event1 = self.state_to_event();
@@ -378,7 +378,7 @@ where
             // {
             -6 => {
                 if !self.push(MODE_KEY) {
-                    self.event1 = JsonEvent::Error;
+                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
                     return;
                 }
                 self.state = OB;
@@ -388,7 +388,7 @@ where
             // [
             -5 => {
                 if !self.push(MODE_ARRAY) {
-                    self.event1 = JsonEvent::Error;
+                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
                     return;
                 }
                 self.state = AR;
@@ -412,7 +412,7 @@ where
                     MODE_OBJECT => {
                         // A comma causes a flip from object mode to key mode.
                         if !self.pop(MODE_OBJECT) || !self.push(MODE_KEY) {
-                            self.event1 = JsonEvent::Error;
+                            self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
                             return;
                         }
                         self.event1 = self.state_to_event();
@@ -425,7 +425,7 @@ where
                     }
 
                     _ => {
-                        self.event1 = JsonEvent::Error;
+                        self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
                     }
                 }
             }
@@ -434,7 +434,7 @@ where
             -2 => {
                 // A colon causes a flip from key mode to object mode.
                 if !self.pop(MODE_KEY) || !self.push(MODE_OBJECT) {
-                    self.event1 = JsonEvent::Error;
+                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
                     return;
                 }
                 self.state = VA;
@@ -442,7 +442,7 @@ where
 
             // Bad action.
             _ => {
-                self.event1 = JsonEvent::Error;
+                self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
             }
         }
     }

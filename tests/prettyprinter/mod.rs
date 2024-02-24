@@ -1,7 +1,7 @@
+use actson::event::ParseErrorKind;
 use actson::feeder::JsonFeeder;
-use actson::{
-    InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError, JsonEvent, JsonParser,
-};
+use actson::parser::{InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError};
+use actson::{JsonEvent, JsonParser};
 use thiserror::Error;
 
 enum Type {
@@ -14,7 +14,7 @@ enum Type {
 #[derive(Error, Debug)]
 pub enum PrettyPrintError {
     #[error("unable to parse JSON")]
-    Parse,
+    Parse(ParseErrorKind),
 
     #[error("{0}")]
     InvalidStringValue(#[from] InvalidStringValueError),
@@ -169,7 +169,7 @@ impl PrettyPrinter {
             JsonEvent::ValueFalse => self.on_value_bool(false),
             JsonEvent::ValueNull => self.on_value_null(),
             JsonEvent::Eof => {}
-            JsonEvent::Error => return Err(PrettyPrintError::Parse),
+            JsonEvent::Error(k) => return Err(PrettyPrintError::Parse(k)),
         }
         Ok(())
     }

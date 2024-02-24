@@ -72,7 +72,7 @@ fn parse_from_file() {
             e = parser.next_event();
         }
 
-        assert_ne!(e, JsonEvent::Error);
+        assert!(!matches!(e, JsonEvent::Error(_)));
 
         prettyprinter.on_event(e, &parser).unwrap();
 

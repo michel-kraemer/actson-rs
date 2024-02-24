@@ -1,16 +1,16 @@
 use serde_json::{Map, Number, Value};
 use thiserror::Error;
 
+use crate::event::ParseErrorKind;
 use crate::feeder::{JsonFeeder, SliceJsonFeeder};
-use crate::{
-    InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError, JsonEvent, JsonParser,
-};
+use crate::parser::{InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError};
+use crate::{JsonEvent, JsonParser};
 
 /// An error that can happen when parsing JSON to a Serde [`Value`]
 #[derive(Error, Debug)]
 pub enum IntoSerdeValueError {
     #[error("unable to parse JSON")]
-    Parse,
+    Parse(ParseErrorKind),
 
     #[error("{0}")]
     InvalidStringValue(#[from] InvalidStringValueError),
@@ -70,7 +70,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
         match event {
             JsonEvent::NeedMoreInput => {}
 
-            JsonEvent::Error => return Err(IntoSerdeValueError::Parse),
+            JsonEvent::Error(k) => return Err(IntoSerdeValueError::Parse(k)),
 
             JsonEvent::StartObject | JsonEvent::StartArray => {
                 let v = if event == JsonEvent::StartObject {
@@ -112,7 +112,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
                         a.push(v);
                     }
                 } else {
-                    return Err(IntoSerdeValueError::Parse);
+                    return Err(IntoSerdeValueError::Parse(ParseErrorKind::SyntaxError));
                 }
             }
 
@@ -120,12 +120,15 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
         }
     }
 
-    result.ok_or(IntoSerdeValueError::Parse)
+    result.ok_or(IntoSerdeValueError::Parse(ParseErrorKind::NoMoreInput))
 }
 
 #[cfg(test)]
 mod test {
-    use crate::serde_json::from_slice;
+    use crate::{
+        event::ParseErrorKind,
+        serde_json::{from_slice, IntoSerdeValueError},
+    };
     use serde_json::{from_slice as serde_from_slice, Value};
 
     /// Test that an empty object is parsed correctly
@@ -201,5 +204,25 @@ mod test {
             serde_from_slice::<Value>(json).unwrap(),
             from_slice(json).unwrap()
         );
+    }
+
+    /// Test that a premature end of input is reported correctly
+    #[test]
+    fn premature_end_of_input() {
+        let json = r#"{"name":"#.as_bytes();
+        assert!(matches!(
+            from_slice(json),
+            Err(IntoSerdeValueError::Parse(ParseErrorKind::NoMoreInput))
+        ));
+    }
+
+    /// Test that a syntax error is reported correctly
+    #[test]
+    fn syntax_error() {
+        let json = r#"{"name"}"#.as_bytes();
+        assert!(matches!(
+            from_slice(json),
+            Err(IntoSerdeValueError::Parse(ParseErrorKind::SyntaxError))
+        ));
     }
 }
