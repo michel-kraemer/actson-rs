@@ -1,4 +1,4 @@
-use crate::feeder::JsonFeeder;
+use crate::feeder::{FillError, JsonFeeder};
 use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 
 /// A [`JsonFeeder`] that reads from an asynchronous [`BufReader`].
@@ -20,7 +20,8 @@ where
         }
     }
 
-    pub async fn fill_buf(&mut self) -> Result<(), std::io::Error> {
+    /// Fill the feeder's internal buffer
+    pub async fn fill_buf(&mut self) -> Result<(), FillError> {
         self.reader.consume(self.pos);
         self.reader.fill_buf().await?;
         self.filled = true;

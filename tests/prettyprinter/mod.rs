@@ -1,11 +1,29 @@
-use std::error::Error;
-
 use actson::feeder::JsonFeeder;
-use actson::{JsonEvent, JsonParser};
+use actson::{
+    InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError, JsonEvent, JsonParser,
+};
+use thiserror::Error;
 
 enum Type {
     Object,
     Array,
+}
+
+/// An error that can happen when pretty-printing a JSON string. Either the
+/// string cannot be parsed or a JSON value cannot be converted.
+#[derive(Error, Debug)]
+pub enum PrettyPrintError {
+    #[error("unable to parse JSON")]
+    Parse,
+
+    #[error("{0}")]
+    InvalidStringValue(#[from] InvalidStringValueError),
+
+    #[error("{0}")]
+    InvalidIntValue(#[from] InvalidIntValueError),
+
+    #[error("{0}")]
+    InvalidFloatValue(#[from] InvalidFloatValueError),
 }
 
 /// Demonstrates how you can use the [`JsonParser`] to pretty-print
@@ -133,7 +151,7 @@ impl PrettyPrinter {
         &mut self,
         event: JsonEvent,
         parser: &JsonParser<T>,
-    ) -> Result<(), Box<dyn Error>>
+    ) -> Result<(), PrettyPrintError>
     where
         T: JsonFeeder,
     {
@@ -151,7 +169,7 @@ impl PrettyPrinter {
             JsonEvent::ValueFalse => self.on_value_bool(false),
             JsonEvent::ValueNull => self.on_value_null(),
             JsonEvent::Eof => {}
-            JsonEvent::Error => return Err("Could not parse JSON".into()),
+            JsonEvent::Error => return Err(PrettyPrintError::Parse),
         }
         Ok(())
     }

@@ -1,6 +1,6 @@
 use std::io::{BufRead, BufReader, Read};
 
-use super::JsonFeeder;
+use super::{FillError, JsonFeeder};
 
 /// A [`JsonFeeder`] that reads from a [`BufReader`].
 pub struct BufReaderJsonFeeder<T> {
@@ -21,7 +21,8 @@ where
         }
     }
 
-    pub fn fill_buf(&mut self) -> Result<(), std::io::Error> {
+    /// Fill the feeder's internal buffer
+    pub fn fill_buf(&mut self) -> Result<(), FillError> {
         self.reader.consume(self.pos);
         self.reader.fill_buf()?;
         self.filled = true;

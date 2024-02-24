@@ -199,4 +199,6 @@ pub mod tokio;
 pub mod serde_json;
 
 pub use event::JsonEvent;
-pub use parser::JsonParser;
+pub use parser::{
+    InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError, JsonParser,
+};

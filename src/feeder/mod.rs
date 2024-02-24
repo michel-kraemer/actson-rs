@@ -3,12 +3,15 @@ mod push;
 mod slice;
 
 pub use bufreader::BufReaderJsonFeeder;
-pub use push::PushJsonFeeder;
+pub use push::{PushError, PushJsonFeeder};
 pub use slice::SliceJsonFeeder;
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum FeedError {
-    Full,
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum FillError {
+    #[error("{0}")]
+    Io(#[from] std::io::Error),
 }
 
 /// A feeder can be used to provide more input data to the

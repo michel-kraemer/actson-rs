@@ -1,32 +1,47 @@
 use serde_json::{Map, Number, Value};
+use thiserror::Error;
 
 use crate::feeder::{JsonFeeder, SliceJsonFeeder};
-use crate::{JsonEvent, JsonParser};
+use crate::{
+    InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError, JsonEvent, JsonParser,
+};
 
-#[derive(Debug, Clone)]
-pub struct ParserError;
+/// An error that can happen when parsing JSON to a Serde [`Value`]
+#[derive(Error, Debug)]
+pub enum IntoSerdeValueError {
+    #[error("unable to parse JSON")]
+    Parse,
 
-fn to_value<T>(event: &JsonEvent, parser: &JsonParser<T>) -> Option<Value>
+    #[error("{0}")]
+    InvalidStringValue(#[from] InvalidStringValueError),
+
+    #[error("{0}")]
+    InvalidIntValue(#[from] InvalidIntValueError),
+
+    #[error("{0}")]
+    InvalidFloatValue(#[from] InvalidFloatValueError),
+
+    #[error("not a JSON number: {0}")]
+    IllegalJsonNumber(f64),
+}
+
+fn to_value<T>(event: &JsonEvent, parser: &JsonParser<T>) -> Result<Value, IntoSerdeValueError>
 where
     T: JsonFeeder,
 {
-    match event {
-        JsonEvent::ValueString => Some(Value::String(parser.current_string().unwrap().to_string())),
-
-        JsonEvent::ValueInt => Some(Value::Number(Number::from(
-            parser.current_int::<i64>().unwrap(),
-        ))),
-
-        JsonEvent::ValueFloat => Some(Value::Number(
-            Number::from_f64(parser.current_float().unwrap()).unwrap(),
-        )),
-
-        JsonEvent::ValueTrue => Some(Value::Bool(true)),
-        JsonEvent::ValueFalse => Some(Value::Bool(false)),
-        JsonEvent::ValueNull => Some(Value::Null),
-
-        _ => None,
-    }
+    Ok(match event {
+        JsonEvent::ValueString => Value::String(parser.current_string()?.to_string()),
+        JsonEvent::ValueInt => Value::Number(Number::from(parser.current_int::<i64>()?)),
+        JsonEvent::ValueFloat => {
+            let f = parser.current_float()?;
+            let n = Number::from_f64(f).ok_or(IntoSerdeValueError::IllegalJsonNumber(f))?;
+            Value::Number(n)
+        }
+        JsonEvent::ValueTrue => Value::Bool(true),
+        JsonEvent::ValueFalse => Value::Bool(false),
+        JsonEvent::ValueNull => Value::Null,
+        _ => unreachable!("this function will only be called for valid events"),
+    })
 }
 
 /// Parse a byte slice into a Serde JSON [Value]
@@ -42,7 +57,7 @@ where
 /// let actual = from_slice(&json).unwrap();
 /// assert_eq!(expected, actual);
 /// ```
-pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
+pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
     let feeder = SliceJsonFeeder::new(v);
     let mut parser = JsonParser::new(feeder);
 
@@ -55,7 +70,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
         match event {
             JsonEvent::NeedMoreInput => {}
 
-            JsonEvent::Error => return Err(ParserError),
+            JsonEvent::Error => return Err(IntoSerdeValueError::Parse),
 
             JsonEvent::StartObject | JsonEvent::StartArray => {
                 let v = if event == JsonEvent::StartObject {
@@ -80,9 +95,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
                 }
             }
 
-            JsonEvent::FieldName => {
-                current_key = Some(parser.current_string().unwrap().to_string())
-            }
+            JsonEvent::FieldName => current_key = Some(parser.current_string()?.to_string()),
 
             JsonEvent::ValueString
             | JsonEvent::ValueInt
@@ -91,7 +104,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
             | JsonEvent::ValueFalse
             | JsonEvent::ValueNull => {
                 if let Some((_, top)) = stack.last_mut() {
-                    let v = to_value(&event, &parser).unwrap();
+                    let v = to_value(&event, &parser)?;
                     if let Some(m) = top.as_object_mut() {
                         m.insert(current_key.unwrap(), v);
                         current_key = None
@@ -99,7 +112,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
                         a.push(v);
                     }
                 } else {
-                    return Err(ParserError);
+                    return Err(IntoSerdeValueError::Parse);
                 }
             }
 
@@ -107,7 +120,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
         }
     }
 
-    result.ok_or(ParserError)
+    result.ok_or(IntoSerdeValueError::Parse)
 }
 
 #[cfg(test)]

@@ -1,7 +1,15 @@
 use std::cmp::min;
 use std::collections::VecDeque;
 
-use super::{FeedError, JsonFeeder};
+use thiserror::Error;
+
+use super::JsonFeeder;
+
+#[derive(Error, Debug)]
+pub enum PushError {
+    #[error("feeder is full")]
+    Full,
+}
 
 /// A feeder that can be used to provide more input data to the
 /// [`JsonParser`](crate::JsonParser) in a push-based manner. The caller has
@@ -29,9 +37,9 @@ impl PushJsonFeeder {
 
     /// Provide more data to the [`JsonParser`](crate::JsonParser). Should only
     /// be called if [`is_full()`](Self::is_full()) returns `false`.
-    pub fn push_byte(&mut self, b: u8) -> Result<(), FeedError> {
+    pub fn push_byte(&mut self, b: u8) -> Result<(), PushError> {
         if self.is_full() {
-            return Err(FeedError::Full);
+            return Err(PushError::Full);
         }
         self.input.push_back(b);
         Ok(())
@@ -88,7 +96,7 @@ impl JsonFeeder for PushJsonFeeder {
 mod test {
     use std::collections::VecDeque;
 
-    use crate::feeder::{JsonFeeder, PushJsonFeeder};
+    use crate::feeder::{JsonFeeder, PushError, PushJsonFeeder};
 
     /// Test if the feeder is empty at the beginning
     #[test]
@@ -181,7 +189,7 @@ mod test {
             feeder.push_byte(b'a' + i).unwrap();
         }
         assert!(feeder.is_full());
-        assert_eq!(feeder.push_byte(b'z'), Err(crate::feeder::FeedError::Full));
+        assert!(matches!(feeder.push_byte(b'z'), Err(PushError::Full)));
     }
 
     /// Test if the feeder returns the correct input

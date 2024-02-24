@@ -1,12 +1,13 @@
 use std::{
     collections::VecDeque,
-    error::Error,
     num::ParseFloatError,
     str::{from_utf8, Utf8Error},
 };
 
 use crate::{event::JsonEvent, feeder::JsonFeeder};
+use btoi::ParseIntegerError;
 use num_traits::{CheckedAdd, CheckedMul, CheckedSub, FromPrimitive, Zero};
+use thiserror::Error;
 
 const __: i8 = -1; // the universal error code
 
@@ -149,6 +150,26 @@ const MODE_ARRAY: i8 = 0;
 const MODE_DONE: i8 = 1;
 const MODE_KEY: i8 = 2;
 const MODE_OBJECT: i8 = 3;
+
+/// An error that can happen when reading the current value as a string
+#[derive(Error, Debug)]
+#[error("invalid string: {0}")]
+pub struct InvalidStringValueError(#[from] Utf8Error);
+
+/// An error that can happen when trying to parse the current value to an integer
+#[derive(Error, Debug)]
+#[error("invalid integer: {0}")]
+pub struct InvalidIntValueError(#[from] ParseIntegerError);
+
+/// An error that can happen when trying to parse the current value to a float
+#[derive(Error, Debug)]
+pub enum InvalidFloatValueError {
+    #[error("unable to convert current value to string: {0}")]
+    String(#[from] InvalidStringValueError),
+
+    #[error("unable to parse current value to float: {0}")]
+    Float(#[from] ParseFloatError),
+}
 
 /// A non-blocking, event-based JSON parser.
 pub struct JsonParser<T> {
@@ -440,21 +461,19 @@ where
         }
     }
 
-    pub fn current_string(&self) -> Result<&str, Utf8Error> {
-        from_utf8(&self.current_buffer)
+    pub fn current_string(&self) -> Result<&str, InvalidStringValueError> {
+        Ok(from_utf8(&self.current_buffer)?)
     }
 
-    pub fn current_int<I>(&self) -> Result<I, Box<dyn Error>>
+    pub fn current_int<I>(&self) -> Result<I, InvalidIntValueError>
     where
         I: FromPrimitive + Zero + CheckedAdd + CheckedSub + CheckedMul,
     {
-        btoi::btoi(&self.current_buffer).map_err(|e| e.into())
+        Ok(btoi::btoi(&self.current_buffer)?)
     }
 
-    pub fn current_float(&self) -> Result<f64, Box<dyn Error>> {
-        self.current_string()?
-            .parse()
-            .map_err(|e: ParseFloatError| e.into())
+    pub fn current_float(&self) -> Result<f64, InvalidFloatValueError> {
+        Ok(self.current_string()?.parse()?)
     }
 
     pub fn parsed_bytes(&self) -> usize {
