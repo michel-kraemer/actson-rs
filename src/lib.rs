@@ -41,7 +41,7 @@
 //!         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
 //!         JsonEvent::Eof => break,
 //!         JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
-//!         _ => {} // there is a whole lot of other events that you may process here
+//!         _ => {} // there are many other events you may process here
 //!     }
 //! }
 //! ```
