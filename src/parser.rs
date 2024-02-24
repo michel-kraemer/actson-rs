@@ -298,7 +298,7 @@ where
         } else {
             next_class = ASCII_CLASS[next_char as usize];
             if next_class <= __ {
-                self.event1 = JsonEvent::Error(ParseErrorKind::IllegalCharacter);
+                self.event1 = JsonEvent::Error(ParseErrorKind::IllegalInput);
                 return;
             }
         }

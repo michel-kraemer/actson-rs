@@ -53,8 +53,9 @@ pub enum JsonEvent {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ParseErrorKind {
-    /// The JSON text contains an illegal character
-    IllegalCharacter,
+    /// The JSON text contains an illegal byte (e.g. a non-whitespace control
+    /// character)
+    IllegalInput,
 
     /// The parsed text is not valid JSON
     SyntaxError,

@@ -184,10 +184,7 @@ fn too_many_next_event() {
 #[test]
 fn illegal_character() {
     let json = "{\"key\":\x02}";
-    assert_eq!(
-        parse_fail(json.as_bytes()),
-        ParseErrorKind::IllegalCharacter
-    );
+    assert_eq!(parse_fail(json.as_bytes()), ParseErrorKind::IllegalInput);
 }
 
 #[test]
