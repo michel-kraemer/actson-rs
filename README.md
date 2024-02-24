@@ -1,17 +1,20 @@
 # Actson [![Actions Status](https://github.com/michel-kraemer/actson-rs/workflows/Rust/badge.svg)](https://github.com/michel-kraemer/actson-rs/actions) [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Latest Version](https://img.shields.io/crates/v/actson.svg)](https://crates.io/crates/actson) [![Documentation](https://img.shields.io/docsrs/actson/latest)](https://docs.rs/actson/latest/actson/)
 
 Actson is a reactive JSON parser (sometimes referred to as non-blocking or
-asynchronous). It is event-based and can be used in asynchronous code (for example in combination with [Tokio](https://tokio.rs/)).
+asynchronous). It is event-based and can be used in asynchronous code (for
+example in combination with [Tokio](https://tokio.rs/)).
 
 ## Why another JSON parser?
 
-* **Non-blocking.** Other JSON parsers use blocking I/O. If you want to develop a reactive application you should use
-  non-blocking I/O (see the [Reactive Manifesto](http://www.reactivemanifesto.org/)).
+* **Non-blocking.** Other JSON parsers use blocking I/O. If you want to develop
+  a reactive application you should use non-blocking I/O (see the
+  [Reactive Manifesto](http://www.reactivemanifesto.org/)).
 * **Big Data.** Most parsers read the full JSON text into memory to map it to
-  a struct, for example. Actson can handle arbitrarily large JSON text. It is
-  event-based and can be used for streaming.
-* **GeoRocket.** Actson was primarily developed for the [GeoJSON](http://geojson.org/) support support in [GeoRocket](http://georocket.io),
-  a high-performance reactive data store for geospatial files.
+  a struct. Actson can handle arbitrarily large JSON text. It is event-based
+  and can be used for streaming.
+* **GeoRocket.** Actson was primarily developed for the [GeoJSON](http://geojson.org/)
+  support in [GeoRocket](http://georocket.io), a high-performance reactive data
+  store for geospatial files.
 
 ## Usage
 
@@ -23,8 +26,8 @@ into a `PushJsonFeeder` and then let the parser consume them until it returns
 `JsonEvent::Eof` or `JsonEvent::Error`.
 
 This approach is very low-level but gives you the freedom to provide new bytes
-to the parser whenever they are available and to generate new JSON events
-whenever you need them.
+to the parser whenever they are available and to generate JSON events whenever
+you need them.
 
 ```rust
 use actson::{JsonParser, JsonEvent};
@@ -34,7 +37,7 @@ let json = r#"{"name": "Elvis"}"#.as_bytes();
 
 let feeder = PushJsonFeeder::new();
 let mut parser = JsonParser::new(feeder);
-let mut i: usize = 0;
+let mut i = 0;
 loop {
     // feed as many bytes as possible to the parser
     let mut event = parser.next_event();
@@ -202,13 +205,14 @@ We test Actson thoroughly to make sure it is compliant with [RFC 8259](https://d
 can parse valid JSON documents, and rejects invalid ones.
 
 Besides own unit tests, Actson passes the tests from
-[JSON_checker.c](http://www.json.org/JSON_checker/) (see Acknowledgments below)
-and all 283 accept and reject tests from the very comprehensive
+[JSON_checker.c](http://www.json.org/JSON_checker/) and all 283 accept and
+reject tests from the very comprehensive
 [JSON Parsing Test Suite](https://github.com/nst/JSONTestSuite/).
 
 ## Other languages
 
-Besides this implementation in Rust here, there is a [Java implementation](https://github.com/michel-kraemer/actson).
+Besides this implementation in Rust here, there is a
+[Java implementation](https://github.com/michel-kraemer/actson).
 
 ## Acknowledgments
 

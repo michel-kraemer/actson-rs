@@ -23,7 +23,7 @@
 //!
 //! let feeder = PushJsonFeeder::new();
 //! let mut parser = JsonParser::new(feeder);
-//! let mut i: usize = 0;
+//! let mut i = 0;
 //! loop {
 //!     // feed as many bytes as possible to the parser
 //!     let mut event = parser.next_event();
