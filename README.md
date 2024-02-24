@@ -51,7 +51,7 @@ loop {
     //     ...
     // }
 
-    assert_ne!(event, JsonEvent::Error);
+    assert!(!matches!(event, JsonEvent::Error(_)));
 
     if event == JsonEvent::Eof {
         break;
@@ -98,7 +98,7 @@ async fn main() {
         //     ...
         // }
 
-        assert_ne!(event, JsonEvent::Error);
+        assert!(!matches!(event, JsonEvent::Error(_)));
 
         if event == JsonEvent::Eof {
             break;
@@ -138,7 +138,7 @@ loop {
     //     ...
     // }
 
-    assert_ne!(event, JsonEvent::Error);
+    assert!(!matches!(event, JsonEvent::Error(_)));
 
     if event == JsonEvent::Eof {
         break;
@@ -167,7 +167,7 @@ loop {
     //     ...
     // }
 
-    assert_ne!(event, JsonEvent::Error);
+    assert!(!matches!(event, JsonEvent::Error(_)));
 
     if event == JsonEvent::Eof {
         break;
