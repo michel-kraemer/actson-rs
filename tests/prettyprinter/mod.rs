@@ -119,7 +119,7 @@ impl PrettyPrinter {
         self.result.push_str(buf.format(value));
     }
 
-    fn on_value_boolean(&mut self, value: bool) {
+    fn on_value_bool(&mut self, value: bool) {
         self.on_value();
         self.result.push_str(&value.to_string());
     }
@@ -147,8 +147,8 @@ impl PrettyPrinter {
             JsonEvent::ValueString => self.on_value_string(parser.current_string()?),
             JsonEvent::ValueInt => self.on_value_int(parser.current_int::<i64>()?),
             JsonEvent::ValueFloat => self.on_value_float(parser.current_float()?),
-            JsonEvent::ValueTrue => self.on_value_boolean(true),
-            JsonEvent::ValueFalse => self.on_value_boolean(false),
+            JsonEvent::ValueTrue => self.on_value_bool(true),
+            JsonEvent::ValueFalse => self.on_value_bool(false),
             JsonEvent::ValueNull => self.on_value_null(),
             JsonEvent::Eof => {}
             JsonEvent::Error => return Err("Could not parse JSON".into()),
