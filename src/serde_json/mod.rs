@@ -111,6 +111,9 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
                     } else if let Some(a) = top.as_array_mut() {
                         a.push(v);
                     }
+                } else if result.is_none() {
+                    let v = to_value(&event, &parser)?;
+                    result = Some(v);
                 } else {
                     return Err(IntoSerdeValueError::Parse(ParseErrorKind::SyntaxError));
                 }
@@ -130,6 +133,36 @@ mod test {
         serde_json::{from_slice, IntoSerdeValueError},
     };
     use serde_json::{from_slice as serde_from_slice, Value};
+
+    /// Test that a top-level string value can be parsed
+    #[test]
+    fn top_level_string() {
+        let json = r#""Elvis""#.as_bytes();
+        assert_eq!(
+            serde_from_slice::<Value>(json).unwrap(),
+            from_slice(json).unwrap()
+        );
+    }
+
+    /// Test that a top-level int value can be parsed
+    #[test]
+    fn top_level_int() {
+        let json = r#"5"#.as_bytes();
+        assert_eq!(
+            serde_from_slice::<Value>(json).unwrap(),
+            from_slice(json).unwrap()
+        );
+    }
+
+    /// Test that a top-level float value can be parsed
+    #[test]
+    fn top_level_float() {
+        let json = r#"-5.0"#.as_bytes();
+        assert_eq!(
+            serde_from_slice::<Value>(json).unwrap(),
+            from_slice(json).unwrap()
+        );
+    }
 
     /// Test that an empty object is parsed correctly
     #[test]
