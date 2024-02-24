@@ -461,7 +461,7 @@ where
         }
     }
 
-    pub fn current_string(&self) -> Result<&str, InvalidStringValueError> {
+    pub fn current_str(&self) -> Result<&str, InvalidStringValueError> {
         Ok(from_utf8(&self.current_buffer)?)
     }
 
@@ -473,7 +473,7 @@ where
     }
 
     pub fn current_float(&self) -> Result<f64, InvalidFloatValueError> {
-        Ok(self.current_string()?.parse()?)
+        Ok(self.current_str()?.parse()?)
     }
 
     pub fn parsed_bytes(&self) -> usize {

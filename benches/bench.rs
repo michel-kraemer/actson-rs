@@ -27,7 +27,7 @@ fn consume(json_bytes: &[u8]) {
         // fetch each value at least once
         match e {
             JsonEvent::FieldName | JsonEvent::ValueString => {
-                parser.current_string().unwrap();
+                parser.current_str().unwrap();
             }
             JsonEvent::ValueInt => {
                 parser.current_int::<i64>().unwrap();

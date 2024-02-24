@@ -30,7 +30,7 @@ where
     T: JsonFeeder,
 {
     Ok(match event {
-        JsonEvent::ValueString => Value::String(parser.current_string()?.to_string()),
+        JsonEvent::ValueString => Value::String(parser.current_str()?.to_string()),
         JsonEvent::ValueInt => Value::Number(Number::from(parser.current_int::<i64>()?)),
         JsonEvent::ValueFloat => {
             let f = parser.current_float()?;
@@ -95,7 +95,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
                 }
             }
 
-            JsonEvent::FieldName => current_key = Some(parser.current_string()?.to_string()),
+            JsonEvent::FieldName => current_key = Some(parser.current_str()?.to_string()),
 
             JsonEvent::ValueString
             | JsonEvent::ValueInt
