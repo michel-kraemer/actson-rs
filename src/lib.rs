@@ -35,15 +35,12 @@
 //!         event = parser.next_event();
 //!     }
 //!
-//!     // do something useful with `event`
-//!     // match event {
-//!     //     ...
-//!     // }
-//!
-//!     assert!(!matches!(event, JsonEvent::Error(_)));
-//!
-//!     if event == JsonEvent::Eof {
-//!         break;
+//!     match event {
+//!         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
+//!         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
+//!         JsonEvent::Eof => break,
+//!         JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
+//!         _ => {}
 //!     }
 //! }
 //! ```
@@ -83,15 +80,10 @@
 //!             event = parser.next_event();
 //!         }
 //!
-//!         // do something useful with `event`
-//!         // match event {
-//!         //     ...
-//!         // }
-//!
-//!         assert!(!matches!(event, JsonEvent::Error(_)));
-//!
-//!         if event == JsonEvent::Eof {
-//!             break;
+//!         match event {
+//!             JsonEvent::Eof => break,
+//!             JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
+//!             _ => {} // do something useful with the other events
 //!         }
 //!     }
 //! }
@@ -125,15 +117,10 @@
 //!         event = parser.next_event();
 //!     }
 //!
-//!     // do something useful with `event`
-//!     // match event {
-//!     //     ...
-//!     // }
-//!
-//!     assert!(!matches!(event, JsonEvent::Error(_)));
-//!
-//!     if event == JsonEvent::Eof {
-//!         break;
+//!     match event {
+//!         JsonEvent::Eof => break,
+//!         JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
+//!         _ => {} // do something useful with the other events
 //!     }
 //! }
 //! ```
@@ -152,17 +139,12 @@
 //! let feeder = SliceJsonFeeder::new(json);
 //! let mut parser = JsonParser::new(feeder);
 //! loop {
-//!     let event = parser.next_event();
-//!
-//!     // do something useful with `event`
-//!     // match event {
-//!     //     ...
-//!     // }
-//!
-//!     assert!(!matches!(event, JsonEvent::Error(_)));
-//!
-//!     if event == JsonEvent::Eof {
-//!         break;
+//!     match parser.next_event() {
+//!         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
+//!         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
+//!         JsonEvent::Eof => break,
+//!         JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
+//!         _ => {}
 //!     }
 //! }
 //! ```
