@@ -49,6 +49,7 @@ loop {
         event = parser.next_event();
     }
 
+    // process event
     match event {
         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
