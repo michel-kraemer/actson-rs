@@ -21,20 +21,19 @@ pub enum JsonEvent {
     /// The end of a JSON array.
     EndArray = 4,
 
-    /// A field name. Call [JsonParser::current_string()](crate::JsonParser::current_string())
+    /// A field name. Call [JsonParser::current_str()](crate::JsonParser::current_str())
     /// to get the name.
     FieldName = 5,
 
-    /// A string value. Call [JsonParser::current_string()](crate::JsonParser::current_string())
+    /// A string value. Call [JsonParser::current_str()](crate::JsonParser::current_str())
     /// to get the value.
     ValueString = 6,
 
-    /// An integer value. Call [JsonParser::current_i32()](crate::JsonParser::current_i32())
-    /// or [JsonParser::current_i64()](crate::JsonParser::current_i64())
+    /// An integer value. Call [JsonParser::current_int()](crate::JsonParser::current_int())
     /// to get the value.
     ValueInt = 7,
 
-    /// A floating point value. Call [JsonParser::current_f64()](crate::JsonParser::current_f64())
+    /// A floating point value. Call [JsonParser::current_float()](crate::JsonParser::current_float())
     /// to get the value.
     ValueFloat = 8,
 
@@ -62,7 +61,7 @@ pub enum ParseErrorKind {
 
     /// There is nothing more to parse. The feeder is done and does not provide
     /// more input. Either the JSON text ended prematurely or
-    /// [`JsonParser::next_event()`] was called too many times (i.e. after the
-    /// end of a valid JSON text was reached).
+    /// [`JsonParser::next_event()`](crate::JsonParser::next_event()) was called
+    /// too many times (i.e. after the end of a valid JSON text was reached).
     NoMoreInput,
 }
