@@ -21,7 +21,7 @@ where
             }
         }
 
-        JsonEvent::ValueDouble => Some(Value::Number(
+        JsonEvent::ValueFloat => Some(Value::Number(
             Number::from_f64(parser.current_f64().unwrap()).unwrap(),
         )),
 
@@ -90,7 +90,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, ParserError> {
 
             JsonEvent::ValueString
             | JsonEvent::ValueInt
-            | JsonEvent::ValueDouble
+            | JsonEvent::ValueFloat
             | JsonEvent::ValueTrue
             | JsonEvent::ValueFalse
             | JsonEvent::ValueNull => {

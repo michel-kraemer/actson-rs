@@ -115,7 +115,7 @@ impl PrettyPrinter {
         self.result.push_str(&value.to_string());
     }
 
-    fn on_value_double(&mut self, value: f64) {
+    fn on_value_float(&mut self, value: f64) {
         self.on_value();
         let mut buf = dtoa::Buffer::new();
         self.result.push_str(buf.format(value));
@@ -154,7 +154,7 @@ impl PrettyPrinter {
                     self.on_value_i64(parser.current_i64()?);
                 }
             }
-            JsonEvent::ValueDouble => self.on_value_double(parser.current_f64()?),
+            JsonEvent::ValueFloat => self.on_value_float(parser.current_f64()?),
             JsonEvent::ValueTrue => self.on_value_boolean(true),
             JsonEvent::ValueFalse => self.on_value_boolean(false),
             JsonEvent::ValueNull => self.on_value_null(),

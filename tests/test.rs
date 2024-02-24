@@ -275,7 +275,7 @@ fn number_of_processed_bytes() {
         (JsonEvent::ValueString, 8),
         (JsonEvent::ValueInt, 14),
         (JsonEvent::ValueString, 20),
-        (JsonEvent::ValueDouble, 28),
+        (JsonEvent::ValueFloat, 28),
         (JsonEvent::EndArray, 28),
         (JsonEvent::Eof, 28),
     ];

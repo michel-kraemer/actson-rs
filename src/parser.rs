@@ -431,7 +431,7 @@ where
     fn state_to_event(&self) -> JsonEvent {
         match self.state {
             IN | ZE => JsonEvent::ValueInt,
-            FR..=E3 => JsonEvent::ValueDouble,
+            FR..=E3 => JsonEvent::ValueFloat,
             T3 => JsonEvent::ValueTrue,
             F4 => JsonEvent::ValueFalse,
             N3 => JsonEvent::ValueNull,

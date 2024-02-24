@@ -33,9 +33,9 @@ pub enum JsonEvent {
     /// to get the value.
     ValueInt = 7,
 
-    /// A double value. Call [JsonParser::current_f64()](crate::JsonParser::current_f64())
+    /// A floating point value. Call [JsonParser::current_f64()](crate::JsonParser::current_f64())
     /// to get the value.
-    ValueDouble = 8,
+    ValueFloat = 8,
 
     /// The boolean value `true`.
     ValueTrue = 9,
