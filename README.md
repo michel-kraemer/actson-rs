@@ -97,7 +97,7 @@ async fn main() {
         match event {
             JsonEvent::Eof => break,
             JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
-            _ => {} // do something useful with the other events
+            _ => {} // do something useful with the event
         }
     }
 }
@@ -132,7 +132,7 @@ loop {
     match event {
         JsonEvent::Eof => break,
         JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
-        _ => {} // do something useful with the other events
+        _ => {} // do something useful with the event
     }
 }
 ```
