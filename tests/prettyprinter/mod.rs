@@ -105,12 +105,10 @@ impl PrettyPrinter {
         self.result.push('"');
     }
 
-    fn on_value_i32(&mut self, value: i32) {
-        self.on_value();
-        self.result.push_str(&value.to_string());
-    }
-
-    fn on_value_i64(&mut self, value: i64) {
+    fn on_value_int<I>(&mut self, value: I)
+    where
+        I: ToString,
+    {
         self.on_value();
         self.result.push_str(&value.to_string());
     }
@@ -147,13 +145,7 @@ impl PrettyPrinter {
             JsonEvent::EndArray => self.on_end_array(),
             JsonEvent::FieldName => self.on_field_name(parser.current_string()?),
             JsonEvent::ValueString => self.on_value_string(parser.current_string()?),
-            JsonEvent::ValueInt => {
-                if let Ok(i) = parser.current_i32() {
-                    self.on_value_i32(i);
-                } else {
-                    self.on_value_i64(parser.current_i64()?);
-                }
-            }
+            JsonEvent::ValueInt => self.on_value_int(parser.current_int::<i64>()?),
             JsonEvent::ValueFloat => self.on_value_float(parser.current_f64()?),
             JsonEvent::ValueTrue => self.on_value_boolean(true),
             JsonEvent::ValueFalse => self.on_value_boolean(false),

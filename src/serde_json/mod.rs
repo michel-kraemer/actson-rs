@@ -13,13 +13,9 @@ where
     match event {
         JsonEvent::ValueString => Some(Value::String(parser.current_string().unwrap().to_string())),
 
-        JsonEvent::ValueInt => {
-            if let Ok(i) = parser.current_i32() {
-                Some(Value::Number(Number::from(i)))
-            } else {
-                Some(Value::Number(Number::from(parser.current_i64().unwrap())))
-            }
-        }
+        JsonEvent::ValueInt => Some(Value::Number(Number::from(
+            parser.current_int::<i64>().unwrap(),
+        ))),
 
         JsonEvent::ValueFloat => Some(Value::Number(
             Number::from_f64(parser.current_f64().unwrap()).unwrap(),

@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{event::JsonEvent, feeder::JsonFeeder};
+use num_traits::{CheckedAdd, CheckedMul, CheckedSub, FromPrimitive, Zero};
 
 const __: i8 = -1; // the universal error code
 
@@ -443,11 +444,10 @@ where
         from_utf8(&self.current_buffer)
     }
 
-    pub fn current_i32(&self) -> Result<i32, Box<dyn Error>> {
-        btoi::btoi(&self.current_buffer).map_err(|e| e.into())
-    }
-
-    pub fn current_i64(&self) -> Result<i64, Box<dyn Error>> {
+    pub fn current_int<I>(&self) -> Result<I, Box<dyn Error>>
+    where
+        I: FromPrimitive + Zero + CheckedAdd + CheckedSub + CheckedMul,
+    {
         btoi::btoi(&self.current_buffer).map_err(|e| e.into())
     }
 

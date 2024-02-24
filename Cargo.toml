@@ -16,6 +16,7 @@ serde_json = ["dep:serde_json"]
 
 [dependencies]
 btoi = "0.4.3"
+num-traits = "0.2.18"
 serde_json = { version = "1.0.114", features = ["float_roundtrip"], optional = true }
 tokio = { version = "1.36.0", features = ["io-util", "rt-multi-thread"], optional = true }
 

@@ -30,7 +30,7 @@ fn consume(json_bytes: &[u8]) {
                 parser.current_string().unwrap();
             }
             JsonEvent::ValueInt => {
-                parser.current_i64().unwrap();
+                parser.current_int::<i64>().unwrap();
             }
             JsonEvent::ValueFloat => {
                 parser.current_f64().unwrap();
