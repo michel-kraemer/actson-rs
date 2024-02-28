@@ -22,22 +22,15 @@ fn parse_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) -> Str
 
     let mut prettyprinter = PrettyPrinter::new();
     let mut i: usize = 0;
-    loop {
+    while let Some(e) = parser.next_event().unwrap() {
         // feed as many bytes as possible to the parser
-        let mut e = parser.next_event().unwrap();
-        while e == JsonEvent::NeedMoreInput {
+        if e == JsonEvent::NeedMoreInput {
             i += parser.feeder.push_bytes(&buf[i..]);
             if i == json.len() {
                 parser.feeder.done();
             }
-            e = parser.next_event().unwrap();
         }
-
         prettyprinter.on_event(e, parser).unwrap();
-
-        if e == JsonEvent::Eof {
-            break;
-        }
     }
 
     prettyprinter.get_result().to_string()
@@ -55,28 +48,21 @@ fn parse_fail_with_parser(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) 
         // feed as many bytes as possible to the parser
         let mut e = match parser.next_event() {
             Err(err) => return err,
-            Ok(ne) => ne,
+            Ok(Some(ne)) => ne,
+            Ok(None) => panic!("End of file before error happened"),
         };
-        while e == JsonEvent::NeedMoreInput {
+        if e == JsonEvent::NeedMoreInput {
             i += parser.feeder.push_bytes(&json[i..]);
             if i == json.len() {
                 parser.feeder.done();
             }
-            e = match parser.next_event() {
-                Err(err) => return err,
-                Ok(ne) => ne,
-            };
-        }
-
-        if e == JsonEvent::Eof {
-            panic!("End of file before error happened");
         }
     }
 }
 
 /// Parse the given JSON string and check if the parser returns the correct number
 /// of consumed bytes for each event produced
-fn parse_checking_consumed_bytes(json: &str, events_bytes: &[(JsonEvent, usize)]) {
+fn parse_checking_consumed_bytes(json: &str, events_bytes: &[(Option<JsonEvent>, usize)]) {
     let buf = json.as_bytes();
     let mut parser = JsonParser::new(PushJsonFeeder::new());
     for &(event, bytes) in events_bytes {
@@ -89,17 +75,24 @@ fn parse_checking_consumed_bytes(json: &str, events_bytes: &[(JsonEvent, usize)]
 }
 
 /// Parse the given JSON string and return the next event produced by the parser
-fn parse_until_next_event(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) -> JsonEvent {
+fn parse_until_next_event(
+    json: &[u8],
+    parser: &mut JsonParser<PushJsonFeeder>,
+) -> Option<JsonEvent> {
     let mut i: usize = 0;
-    let mut event = parser.next_event().unwrap();
-    while event == JsonEvent::NeedMoreInput {
-        i += parser.feeder.push_bytes(&json[i..]);
-        if i == json.len() {
-            parser.feeder.done();
+    loop {
+        let event = parser.next_event().unwrap();
+        match event {
+            Some(JsonEvent::NeedMoreInput) => {
+                i += parser.feeder.push_bytes(&json[i..]);
+                if i == json.len() {
+                    parser.feeder.done();
+                }
+            }
+            Some(e) => return event,
+            None => return None,
         }
-        event = parser.next_event().unwrap();
     }
-    event
 }
 
 fn assert_json_eq(expected: &str, actual: &str) {
@@ -284,11 +277,11 @@ fn number_of_processed_bytes() {
     let json = r#"{"name": "Elvis"}"#;
     // the events and the corresponding bytes that are processed to produces them
     let events_bytes = [
-        (JsonEvent::StartObject, 1),
-        (JsonEvent::FieldName, 7),
-        (JsonEvent::ValueString, 16),
-        (JsonEvent::EndObject, 17),
-        (JsonEvent::Eof, 17),
+        (Some(JsonEvent::StartObject), 1),
+        (Some(JsonEvent::FieldName), 7),
+        (Some(JsonEvent::ValueString), 16),
+        (Some(JsonEvent::EndObject), 17),
+        (None, 17),
     ];
     parse_checking_consumed_bytes(json, &events_bytes);
 
@@ -297,13 +290,13 @@ fn number_of_processed_bytes() {
     // ["Elvis", 132, "Max", 80.67]
     let json = r#"["Elvis", 132, "Max", 80.67]"#;
     let events_bytes = [
-        (JsonEvent::StartArray, 1),
-        (JsonEvent::ValueString, 8),
-        (JsonEvent::ValueInt, 14),
-        (JsonEvent::ValueString, 20),
-        (JsonEvent::ValueFloat, 28),
-        (JsonEvent::EndArray, 28),
-        (JsonEvent::Eof, 28),
+        (Some(JsonEvent::StartArray), 1),
+        (Some(JsonEvent::ValueString), 8),
+        (Some(JsonEvent::ValueInt), 14),
+        (Some(JsonEvent::ValueString), 20),
+        (Some(JsonEvent::ValueFloat), 28),
+        (Some(JsonEvent::EndArray), 28),
+        (None, 28),
     ];
     parse_checking_consumed_bytes(json, &events_bytes);
 
@@ -314,11 +307,11 @@ fn number_of_processed_bytes() {
     // {"name": "Bjœrn"}
     let json = "{\"name\": \"Bj\u{0153}rn\"}";
     let events_bytes = [
-        (JsonEvent::StartObject, 1),
-        (JsonEvent::FieldName, 7),
-        (JsonEvent::ValueString, 17),
-        (JsonEvent::EndObject, 18),
-        (JsonEvent::Eof, 18),
+        (Some(JsonEvent::StartObject), 1),
+        (Some(JsonEvent::FieldName), 7),
+        (Some(JsonEvent::ValueString), 17),
+        (Some(JsonEvent::EndObject), 18),
+        (None, 18),
     ];
     parse_checking_consumed_bytes(json, &events_bytes);
 }

@@ -21,9 +21,7 @@ fn make_large(json: &str) -> String {
 fn consume(json_bytes: &[u8]) {
     let feeder = SliceJsonFeeder::new(json_bytes);
     let mut parser = JsonParser::new(feeder);
-    loop {
-        let e = parser.next_event().unwrap();
-
+    while let Some(e) = parser.next_event().unwrap() {
         // fetch each value at least once
         match e {
             JsonEvent::FieldName | JsonEvent::ValueString => {
@@ -35,7 +33,6 @@ fn consume(json_bytes: &[u8]) {
             JsonEvent::ValueFloat => {
                 parser.current_float().unwrap();
             }
-            JsonEvent::Eof => break,
             _ => {}
         }
     }
@@ -64,7 +61,7 @@ fn actson_benchmark(c: &mut Criterion) {
         b.iter(|| {
             let feeder = SliceJsonFeeder::new(json_bytes);
             let mut parser = JsonParser::new(feeder);
-            while parser.next_event().unwrap() != JsonEvent::Eof {}
+            while parser.next_event().unwrap().is_some() {}
         })
     });
 
@@ -72,7 +69,7 @@ fn actson_benchmark(c: &mut Criterion) {
         b.iter(|| {
             let feeder = SliceJsonFeeder::new(json_large_bytes);
             let mut parser = JsonParser::new(feeder);
-            while parser.next_event().unwrap() != JsonEvent::Eof {}
+            while parser.next_event().unwrap().is_some() {}
         })
     });
 

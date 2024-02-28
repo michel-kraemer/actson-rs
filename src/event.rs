@@ -41,7 +41,4 @@ pub enum JsonEvent {
 
     /// A `null` value.
     ValueNull = 11,
-
-    /// The end of the JSON text
-    Eof = 99,
 }

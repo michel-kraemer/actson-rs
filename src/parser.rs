@@ -267,9 +267,10 @@ where
     }
 
     /// Call this method to proceed parsing the JSON text and to get the next
-    /// event. The method returns [`JsonEvent::NeedMoreInput`] if it needs
-    /// more input data from the given feeder.
-    pub fn next_event(&mut self) -> Result<JsonEvent, ParserError> {
+    /// event. The method returns [`Some(JsonEvent::NeedMoreInput)`](JsonEvent::NeedMoreInput)
+    /// if it needs more input data from the feeder or `None` if the end of the
+    /// JSON text has been reached.
+    pub fn next_event(&mut self) -> Result<Option<JsonEvent>, ParserError> {
         while let Ok(JsonEvent::NeedMoreInput) = self.event1 {
             if let Some(b) = self.feeder.next_input() {
                 self.parsed_bytes += 1;
@@ -285,16 +286,16 @@ where
                         let r = self.state_to_event();
                         if r != JsonEvent::NeedMoreInput {
                             self.state = OK;
-                            return Ok(r);
+                            return Ok(Some(r));
                         }
                     }
                     return if self.state == OK && self.pop(MODE_DONE) {
-                        Ok(JsonEvent::Eof)
+                        Ok(None)
                     } else {
                         Err(ParserError::NoMoreInput)
                     };
                 }
-                return Ok(JsonEvent::NeedMoreInput);
+                return Ok(Some(JsonEvent::NeedMoreInput));
             }
         }
 
@@ -304,7 +305,7 @@ where
             self.event2 = JsonEvent::NeedMoreInput;
         }
 
-        r
+        r.map(Some)
     }
 
     /// This function is called for each character (or partial character) in the

@@ -7,9 +7,11 @@
 //! ### Push-based parsing
 //!
 //! Push-based parsing is the most flexible way of using Actson. Push new bytes
-//! into a [`PushJsonFeeder`](feeder::PushJsonFeeder) and then let the
-//! parser consume them until it returns [`JsonEvent::NeedMoreInput`]. Repeat
-//! this process until you receive [`JsonEvent::Eof`] or [`JsonEvent::Error`].
+//! into a [`PushJsonFeeder`](feeder::PushJsonFeeder) and then let the parser
+//! consume them until it returns [`Some(JsonEvent::NeedMoreInput)`](JsonEvent::NeedMoreInput).
+//! Repeat this process until you receive `None`, which means the end of the
+//! JSON text has been reached. The parser returns `Err` if the JSON text is
+//! invalid or some other error has occurred.
 //!
 //! This approach is very low-level but gives you the freedom to provide new
 //! bytes to the parser whenever they are available and to generate new JSON
@@ -24,22 +26,19 @@
 //! let feeder = PushJsonFeeder::new();
 //! let mut parser = JsonParser::new(feeder);
 //! let mut i = 0;
-//! loop {
-//!     // feed as many bytes as possible to the parser
-//!     let mut event = parser.next_event().unwrap();
-//!     while event == JsonEvent::NeedMoreInput {
-//!         i += parser.feeder.push_bytes(&json[i..]);
-//!         if i == json.len() {
-//!             parser.feeder.done();
-//!         }
-//!         event = parser.next_event().unwrap();
-//!     }
-//!
-//!     // process event
+//! while let Some(event) = parser.next_event().unwrap() {
 //!     match event {
+//!         JsonEvent::NeedMoreInput => {
+//!             // feed as many bytes as possible to the parser
+//!             i += parser.feeder.push_bytes(&json[i..]);
+//!             if i == json.len() {
+//!                 parser.feeder.done();
+//!             }
+//!         }
+//!
 //!         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
 //!         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
-//!         JsonEvent::Eof => break,
+//!
 //!         _ => {} // there are many other event types you may process here
 //!     }
 //! }
@@ -73,15 +72,9 @@
 //!
 //!     let feeder = AsyncBufReaderJsonFeeder::new(reader);
 //!     let mut parser = JsonParser::new(feeder);
-//!     loop {
-//!         let mut event = parser.next_event().unwrap();
-//!         while event == JsonEvent::NeedMoreInput {
-//!             parser.feeder.fill_buf().await.unwrap();
-//!             event = parser.next_event().unwrap();
-//!         }
-//!
+//!     while let Some(event) = parser.next_event().unwrap() {
 //!         match event {
-//!             JsonEvent::Eof => break,
+//!             JsonEvent::NeedMoreInput => parser.feeder.fill_buf().await.unwrap(),
 //!             _ => {} // do something useful with the event
 //!         }
 //!     }
@@ -109,15 +102,9 @@
 //!
 //! let feeder = BufReaderJsonFeeder::new(reader);
 //! let mut parser = JsonParser::new(feeder);
-//! loop {
-//!     let mut event = parser.next_event().unwrap();
-//!     while event == JsonEvent::NeedMoreInput {
-//!         parser.feeder.fill_buf().unwrap();
-//!         event = parser.next_event().unwrap();
-//!     }
-//!
+//! while let Some(event) = parser.next_event().unwrap() {
 //!     match event {
-//!         JsonEvent::Eof => break,
+//!         JsonEvent::NeedMoreInput => parser.feeder.fill_buf().unwrap(),
 //!         _ => {} // do something useful with the event
 //!     }
 //! }
@@ -136,11 +123,10 @@
 //!
 //! let feeder = SliceJsonFeeder::new(json);
 //! let mut parser = JsonParser::new(feeder);
-//! loop {
-//!     match parser.next_event().unwrap() {
+//! while let Some(event) = parser.next_event().unwrap() {
+//!     match event {
 //!         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
 //!         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
-//!         JsonEvent::Eof => break,
 //!         _ => {}
 //!     }
 //! }

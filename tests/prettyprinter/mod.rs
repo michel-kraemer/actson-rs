@@ -164,7 +164,6 @@ impl PrettyPrinter {
             JsonEvent::ValueTrue => self.on_value_bool(true),
             JsonEvent::ValueFalse => self.on_value_bool(false),
             JsonEvent::ValueNull => self.on_value_null(),
-            JsonEvent::Eof => {}
         }
         Ok(())
     }

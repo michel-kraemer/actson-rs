@@ -66,8 +66,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
     let mut result = None;
     let mut current_key = None;
 
-    loop {
-        let event = parser.next_event()?;
+    while let Some(event) = parser.next_event()? {
         match event {
             JsonEvent::NeedMoreInput => {}
 
@@ -117,8 +116,6 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
                     return Err(IntoSerdeValueError::Parse(ParserError::SyntaxError));
                 }
             }
-
-            JsonEvent::Eof => break,
         }
     }
 
