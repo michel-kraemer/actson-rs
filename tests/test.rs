@@ -4,8 +4,8 @@ mod tokio;
 
 use std::fs;
 
-use actson::event::ParseErrorKind;
 use actson::feeder::PushJsonFeeder;
+use actson::parser::ParserError;
 use actson::{JsonEvent, JsonParser};
 use prettyprinter::PrettyPrinter;
 use serde_json::Value;
@@ -24,16 +24,14 @@ fn parse_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) -> Str
     let mut i: usize = 0;
     loop {
         // feed as many bytes as possible to the parser
-        let mut e = parser.next_event();
+        let mut e = parser.next_event().unwrap();
         while e == JsonEvent::NeedMoreInput {
             i += parser.feeder.push_bytes(&buf[i..]);
             if i == json.len() {
                 parser.feeder.done();
             }
-            e = parser.next_event();
+            e = parser.next_event().unwrap();
         }
-
-        assert!(!matches!(e, JsonEvent::Error(_)));
 
         prettyprinter.on_event(e, parser).unwrap();
 
@@ -46,29 +44,33 @@ fn parse_with_parser(json: &str, parser: &mut JsonParser<PushJsonFeeder>) -> Str
 }
 
 /// Parse a JSON string and expect parsing to fail
-fn parse_fail(json: &[u8]) -> ParseErrorKind {
+fn parse_fail(json: &[u8]) -> ParserError {
     let feeder = PushJsonFeeder::new();
     parse_fail_with_parser(json, &mut JsonParser::new(feeder))
 }
 
-fn parse_fail_with_parser(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) -> ParseErrorKind {
+fn parse_fail_with_parser(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) -> ParserError {
     let mut i: usize = 0;
     loop {
         // feed as many bytes as possible to the parser
-        let mut e = parser.next_event();
+        let mut e = match parser.next_event() {
+            Err(err) => return err,
+            Ok(ne) => ne,
+        };
         while e == JsonEvent::NeedMoreInput {
             i += parser.feeder.push_bytes(&json[i..]);
             if i == json.len() {
                 parser.feeder.done();
             }
-            e = parser.next_event();
+            e = match parser.next_event() {
+                Err(err) => return err,
+                Ok(ne) => ne,
+            };
         }
 
-        match e {
-            JsonEvent::Error(k) => return k,
-            JsonEvent::Eof => panic!("End of file before error happened"),
-            _ => {}
-        };
+        if e == JsonEvent::Eof {
+            panic!("End of file before error happened");
+        }
     }
 }
 
@@ -89,13 +91,13 @@ fn parse_checking_consumed_bytes(json: &str, events_bytes: &[(JsonEvent, usize)]
 /// Parse the given JSON string and return the next event produced by the parser
 fn parse_until_next_event(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) -> JsonEvent {
     let mut i: usize = 0;
-    let mut event = parser.next_event();
+    let mut event = parser.next_event().unwrap();
     while event == JsonEvent::NeedMoreInput {
         i += parser.feeder.push_bytes(&json[i..]);
         if i == json.len() {
             parser.feeder.done();
         }
-        event = parser.next_event();
+        event = parser.next_event().unwrap();
     }
     event
 }
@@ -175,22 +177,25 @@ fn too_many_next_event() {
     let feeder = PushJsonFeeder::new();
     let mut parser = JsonParser::new(feeder);
     assert_json_eq(json, &parse_with_parser(json, &mut parser));
-    assert!(matches!(
-        parser.next_event(),
-        JsonEvent::Error(ParseErrorKind::NoMoreInput)
-    ));
+    assert!(matches!(parser.next_event(), Err(ParserError::NoMoreInput)));
 }
 
 #[test]
 fn illegal_character() {
     let json = "{\"key\":\x02}";
-    assert_eq!(parse_fail(json.as_bytes()), ParseErrorKind::IllegalInput);
+    assert!(matches!(
+        parse_fail(json.as_bytes()),
+        ParserError::IllegalInput(0x02)
+    ));
 }
 
 #[test]
 fn syntax_error() {
     let json = "{key}";
-    assert_eq!(parse_fail(json.as_bytes()), ParseErrorKind::SyntaxError);
+    assert!(matches!(
+        parse_fail(json.as_bytes()),
+        ParserError::SyntaxError
+    ));
 }
 
 /// Make sure a number right before the end of the object can be parsed
@@ -211,7 +216,10 @@ fn fraction() {
 #[test]
 fn illegal_number() {
     let json = r#"{"n":-2.}"#;
-    assert_eq!(parse_fail(json.as_bytes()), ParseErrorKind::SyntaxError);
+    assert!(matches!(
+        parse_fail(json.as_bytes()),
+        ParserError::SyntaxError
+    ));
 }
 
 /// Make sure '0e1' can be parsed
@@ -253,7 +261,10 @@ fn top_level_long() {
 #[test]
 fn number_and_eof() {
     let json = r#"{"i":42"#;
-    assert_eq!(parse_fail(json.as_bytes()), ParseErrorKind::NoMoreInput);
+    assert!(matches!(
+        parse_fail(json.as_bytes()),
+        ParserError::NoMoreInput
+    ));
 }
 
 /// Test if a top-level zero can be parsed

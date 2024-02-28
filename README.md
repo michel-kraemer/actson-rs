@@ -40,13 +40,13 @@ let mut parser = JsonParser::new(feeder);
 let mut i = 0;
 loop {
     // feed as many bytes as possible to the parser
-    let mut event = parser.next_event();
+    let mut event = parser.next_event().unwrap();
     while event == JsonEvent::NeedMoreInput {
         i += parser.feeder.push_bytes(&json[i..]);
         if i == json.len() {
             parser.feeder.done();
         }
-        event = parser.next_event();
+        event = parser.next_event().unwrap();
     }
 
     // process event
@@ -54,7 +54,6 @@ loop {
         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
         JsonEvent::Eof => break,
-        JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
         _ => {} // there are many other event types you may process here
     }
 }
@@ -88,15 +87,14 @@ async fn main() {
     let feeder = AsyncBufReaderJsonFeeder::new(reader);
     let mut parser = JsonParser::new(feeder);
     loop {
-        let mut event = parser.next_event();
-        if event == JsonEvent::NeedMoreInput {
+        let mut event = parser.next_event().unwrap();
+        while event == JsonEvent::NeedMoreInput {
             parser.feeder.fill_buf().await.unwrap();
-            event = parser.next_event();
+            event = parser.next_event().unwrap();
         }
 
         match event {
             JsonEvent::Eof => break,
-            JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
             _ => {} // do something useful with the event
         }
     }
@@ -113,6 +111,7 @@ with Tokio instead to parse JSON asynchronously (see above).
 
 ```rust
 use actson::{JsonParser, JsonEvent};
+use actson::feeder::BufReaderJsonFeeder;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -120,18 +119,17 @@ use std::io::BufReader;
 let file = File::open("tests/fixtures/pass1.txt").unwrap();
 let reader = BufReader::new(file);
 
-let feeder = actson::feeder::BufReaderJsonFeeder::new(reader);
+let feeder = BufReaderJsonFeeder::new(reader);
 let mut parser = JsonParser::new(feeder);
 loop {
-    let mut event = parser.next_event();
-    if event == JsonEvent::NeedMoreInput {
+    let mut event = parser.next_event().unwrap();
+    while event == JsonEvent::NeedMoreInput {
         parser.feeder.fill_buf().unwrap();
-        event = parser.next_event();
+        event = parser.next_event().unwrap();
     }
 
     match event {
         JsonEvent::Eof => break,
-        JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
         _ => {} // do something useful with the event
     }
 }
@@ -151,11 +149,10 @@ let json = r#"{"name": "Elvis"}"#.as_bytes();
 let feeder = SliceJsonFeeder::new(json);
 let mut parser = JsonParser::new(feeder);
 loop {
-    match parser.next_event() {
+    match parser.next_event().unwrap() {
         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
         JsonEvent::Eof => break,
-        JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
         _ => {}
     }
 }

@@ -26,13 +26,13 @@
 //! let mut i = 0;
 //! loop {
 //!     // feed as many bytes as possible to the parser
-//!     let mut event = parser.next_event();
+//!     let mut event = parser.next_event().unwrap();
 //!     while event == JsonEvent::NeedMoreInput {
 //!         i += parser.feeder.push_bytes(&json[i..]);
 //!         if i == json.len() {
 //!             parser.feeder.done();
 //!         }
-//!         event = parser.next_event();
+//!         event = parser.next_event().unwrap();
 //!     }
 //!
 //!     // process event
@@ -40,7 +40,6 @@
 //!         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
 //!         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
 //!         JsonEvent::Eof => break,
-//!         JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
 //!         _ => {} // there are many other event types you may process here
 //!     }
 //! }
@@ -75,15 +74,14 @@
 //!     let feeder = AsyncBufReaderJsonFeeder::new(reader);
 //!     let mut parser = JsonParser::new(feeder);
 //!     loop {
-//!         let mut event = parser.next_event();
-//!         if event == JsonEvent::NeedMoreInput {
+//!         let mut event = parser.next_event().unwrap();
+//!         while event == JsonEvent::NeedMoreInput {
 //!             parser.feeder.fill_buf().await.unwrap();
-//!             event = parser.next_event();
+//!             event = parser.next_event().unwrap();
 //!         }
 //!
 //!         match event {
 //!             JsonEvent::Eof => break,
-//!             JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
 //!             _ => {} // do something useful with the event
 //!         }
 //!     }
@@ -112,15 +110,14 @@
 //! let feeder = BufReaderJsonFeeder::new(reader);
 //! let mut parser = JsonParser::new(feeder);
 //! loop {
-//!     let mut event = parser.next_event();
-//!     if event == JsonEvent::NeedMoreInput {
+//!     let mut event = parser.next_event().unwrap();
+//!     while event == JsonEvent::NeedMoreInput {
 //!         parser.feeder.fill_buf().unwrap();
-//!         event = parser.next_event();
+//!         event = parser.next_event().unwrap();
 //!     }
 //!
 //!     match event {
 //!         JsonEvent::Eof => break,
-//!         JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
 //!         _ => {} // do something useful with the event
 //!     }
 //! }
@@ -140,11 +137,10 @@
 //! let feeder = SliceJsonFeeder::new(json);
 //! let mut parser = JsonParser::new(feeder);
 //! loop {
-//!     match parser.next_event() {
+//!     match parser.next_event().unwrap() {
 //!         JsonEvent::FieldName => assert!(matches!(parser.current_str(), Ok("name"))),
 //!         JsonEvent::ValueString => assert!(matches!(parser.current_str(), Ok("Elvis"))),
 //!         JsonEvent::Eof => break,
-//!         JsonEvent::Error(kind) => panic!("Parser error: {:?}", kind),
 //!         _ => {}
 //!     }
 //! }

@@ -66,13 +66,11 @@ fn parse_from_file() {
     let mut prettyprinter = PrettyPrinter::new();
 
     loop {
-        let mut e = parser.next_event();
+        let mut e = parser.next_event().unwrap();
         if e == JsonEvent::NeedMoreInput {
             parser.feeder.fill_buf().unwrap();
-            e = parser.next_event();
+            e = parser.next_event().unwrap();
         }
-
-        assert!(!matches!(e, JsonEvent::Error(_)));
 
         prettyprinter.on_event(e, &parser).unwrap();
 

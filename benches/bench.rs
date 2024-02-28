@@ -22,7 +22,7 @@ fn consume(json_bytes: &[u8]) {
     let feeder = SliceJsonFeeder::new(json_bytes);
     let mut parser = JsonParser::new(feeder);
     loop {
-        let e = parser.next_event();
+        let e = parser.next_event().unwrap();
 
         // fetch each value at least once
         match e {
@@ -64,7 +64,7 @@ fn actson_benchmark(c: &mut Criterion) {
         b.iter(|| {
             let feeder = SliceJsonFeeder::new(json_bytes);
             let mut parser = JsonParser::new(feeder);
-            while parser.next_event() != JsonEvent::Eof {}
+            while parser.next_event().unwrap() != JsonEvent::Eof {}
         })
     });
 
@@ -72,7 +72,7 @@ fn actson_benchmark(c: &mut Criterion) {
         b.iter(|| {
             let feeder = SliceJsonFeeder::new(json_large_bytes);
             let mut parser = JsonParser::new(feeder);
-            while parser.next_event() != JsonEvent::Eof {}
+            while parser.next_event().unwrap() != JsonEvent::Eof {}
         })
     });
 

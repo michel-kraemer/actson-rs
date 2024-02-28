@@ -1,16 +1,17 @@
 use serde_json::{Map, Number, Value};
 use thiserror::Error;
 
-use crate::event::ParseErrorKind;
 use crate::feeder::{JsonFeeder, SliceJsonFeeder};
-use crate::parser::{InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError};
+use crate::parser::{
+    InvalidFloatValueError, InvalidIntValueError, InvalidStringValueError, ParserError,
+};
 use crate::{JsonEvent, JsonParser};
 
 /// An error that can happen when parsing JSON to a Serde [`Value`]
 #[derive(Error, Debug)]
 pub enum IntoSerdeValueError {
-    #[error("unable to parse JSON")]
-    Parse(ParseErrorKind),
+    #[error("{0}")]
+    Parse(#[from] ParserError),
 
     #[error("{0}")]
     InvalidStringValue(#[from] InvalidStringValueError),
@@ -66,11 +67,9 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
     let mut current_key = None;
 
     loop {
-        let event = parser.next_event();
+        let event = parser.next_event()?;
         match event {
             JsonEvent::NeedMoreInput => {}
-
-            JsonEvent::Error(k) => return Err(IntoSerdeValueError::Parse(k)),
 
             JsonEvent::StartObject | JsonEvent::StartArray => {
                 let v = if event == JsonEvent::StartObject {
@@ -115,7 +114,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
                     let v = to_value(&event, &parser)?;
                     result = Some(v);
                 } else {
-                    return Err(IntoSerdeValueError::Parse(ParseErrorKind::SyntaxError));
+                    return Err(IntoSerdeValueError::Parse(ParserError::SyntaxError));
                 }
             }
 
@@ -123,13 +122,13 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
         }
     }
 
-    result.ok_or(IntoSerdeValueError::Parse(ParseErrorKind::NoMoreInput))
+    result.ok_or(IntoSerdeValueError::Parse(ParserError::NoMoreInput))
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
-        event::ParseErrorKind,
+        parser::ParserError,
         serde_json::{from_slice, IntoSerdeValueError},
     };
     use serde_json::{from_slice as serde_from_slice, Value};
@@ -245,7 +244,7 @@ mod test {
         let json = r#"{"name":"#.as_bytes();
         assert!(matches!(
             from_slice(json),
-            Err(IntoSerdeValueError::Parse(ParseErrorKind::NoMoreInput))
+            Err(IntoSerdeValueError::Parse(ParserError::NoMoreInput))
         ));
     }
 
@@ -255,7 +254,7 @@ mod test {
         let json = r#"{"name"}"#.as_bytes();
         assert!(matches!(
             from_slice(json),
-            Err(IntoSerdeValueError::Parse(ParseErrorKind::SyntaxError))
+            Err(IntoSerdeValueError::Parse(ParserError::SyntaxError))
         ));
     }
 }

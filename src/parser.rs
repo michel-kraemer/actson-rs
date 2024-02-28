@@ -4,7 +4,7 @@ use std::{
     str::{from_utf8, Utf8Error},
 };
 
-use crate::{event::ParseErrorKind, feeder::JsonFeeder, JsonEvent};
+use crate::{feeder::JsonFeeder, JsonEvent};
 use btoi::ParseIntegerError;
 use num_traits::{CheckedAdd, CheckedMul, CheckedSub, FromPrimitive, Zero};
 use thiserror::Error;
@@ -171,6 +171,26 @@ pub enum InvalidFloatValueError {
     Float(#[from] ParseFloatError),
 }
 
+/// An error that can happen during parsing
+#[derive(Error, Debug, Clone, Copy)]
+pub enum ParserError {
+    /// The JSON text contains an illegal byte (e.g. a non-whitespace control
+    /// character)
+    #[error("JSON text contains an illegal byte: `{0}'")]
+    IllegalInput(u8),
+
+    /// The parsed text is not valid JSON
+    #[error("syntax error: the parsed text is not valid JSON")]
+    SyntaxError,
+
+    /// There is nothing more to parse. The feeder is done and does not provide
+    /// more input. Either the JSON text ended prematurely or
+    /// [`JsonParser::next_event()`](crate::JsonParser::next_event()) was called
+    /// too many times (i.e. after the end of a valid JSON text was reached).
+    #[error("nothing more to parse")]
+    NoMoreInput,
+}
+
 /// A non-blocking, event-based JSON parser.
 pub struct JsonParser<T> {
     pub feeder: T,
@@ -189,7 +209,7 @@ pub struct JsonParser<T> {
     current_buffer: Vec<u8>,
 
     /// The first event returned by [`Self::parse()`]
-    event1: JsonEvent,
+    event1: Result<JsonEvent, ParserError>,
 
     /// The second event returned by [`Self::parse()`]
     event2: JsonEvent,
@@ -209,7 +229,7 @@ where
             depth: 2048,
             state: GO,
             current_buffer: vec![],
-            event1: JsonEvent::NeedMoreInput,
+            event1: Ok(JsonEvent::NeedMoreInput),
             event2: JsonEvent::NeedMoreInput,
             parsed_bytes: 0,
         }
@@ -222,7 +242,7 @@ where
             depth: max_depth,
             state: GO,
             current_buffer: vec![],
-            event1: JsonEvent::NeedMoreInput,
+            event1: Ok(JsonEvent::NeedMoreInput),
             event2: JsonEvent::NeedMoreInput,
             parsed_bytes: 0,
         }
@@ -249,8 +269,8 @@ where
     /// Call this method to proceed parsing the JSON text and to get the next
     /// event. The method returns [`JsonEvent::NeedMoreInput`] if it needs
     /// more input data from the given feeder.
-    pub fn next_event(&mut self) -> JsonEvent {
-        while self.event1 == JsonEvent::NeedMoreInput {
+    pub fn next_event(&mut self) -> Result<JsonEvent, ParserError> {
+        while let Ok(JsonEvent::NeedMoreInput) = self.event1 {
             if let Some(b) = self.feeder.next_input() {
                 self.parsed_bytes += 1;
                 if self.state == ST && (32..=127).contains(&b) && b != b'\\' && b != b'"' {
@@ -265,22 +285,22 @@ where
                         let r = self.state_to_event();
                         if r != JsonEvent::NeedMoreInput {
                             self.state = OK;
-                            return r;
+                            return Ok(r);
                         }
                     }
                     return if self.state == OK && self.pop(MODE_DONE) {
-                        JsonEvent::Eof
+                        Ok(JsonEvent::Eof)
                     } else {
-                        JsonEvent::Error(ParseErrorKind::NoMoreInput)
+                        Err(ParserError::NoMoreInput)
                     };
                 }
-                return JsonEvent::NeedMoreInput;
+                return Ok(JsonEvent::NeedMoreInput);
             }
         }
 
         let r = self.event1;
-        if !matches!(self.event1, JsonEvent::Error(_)) {
-            self.event1 = self.event2;
+        if self.event1.is_ok() {
+            self.event1 = Ok(self.event2);
             self.event2 = JsonEvent::NeedMoreInput;
         }
 
@@ -298,7 +318,7 @@ where
         } else {
             next_class = ASCII_CLASS[next_char as usize];
             if next_class <= __ {
-                self.event1 = JsonEvent::Error(ParseErrorKind::IllegalInput);
+                self.event1 = Err(ParserError::IllegalInput(next_char));
                 return;
             }
         }
@@ -321,7 +341,7 @@ where
                 }
             } else if next_state == OK {
                 // end of token identified, convert state to result
-                self.event1 = self.state_to_event();
+                self.event1 = Ok(self.state_to_event());
             }
 
             // Change the state.
@@ -338,24 +358,25 @@ where
             // empty }
             -9 => {
                 if !self.pop(MODE_KEY) {
-                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                    self.event1 = Err(ParserError::SyntaxError);
                     return;
                 }
                 self.state = OK;
-                self.event1 = JsonEvent::EndObject;
+                self.event1 = Ok(JsonEvent::EndObject);
             }
 
             // }
             -8 => {
                 if !self.pop(MODE_OBJECT) {
-                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                    self.event1 = Err(ParserError::SyntaxError);
                     return;
                 }
-                self.event1 = self.state_to_event();
-                if self.event1 == JsonEvent::NeedMoreInput {
-                    self.event1 = JsonEvent::EndObject;
-                } else {
-                    self.event2 = JsonEvent::EndObject;
+                match self.state_to_event() {
+                    JsonEvent::NeedMoreInput => self.event1 = Ok(JsonEvent::EndObject),
+                    e => {
+                        self.event1 = Ok(e);
+                        self.event2 = JsonEvent::EndObject;
+                    }
                 }
                 self.state = OK;
             }
@@ -363,14 +384,15 @@ where
             // ]
             -7 => {
                 if !self.pop(MODE_ARRAY) {
-                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                    self.event1 = Err(ParserError::SyntaxError);
                     return;
                 }
-                self.event1 = self.state_to_event();
-                if self.event1 == JsonEvent::NeedMoreInput {
-                    self.event1 = JsonEvent::EndArray;
-                } else {
-                    self.event2 = JsonEvent::EndArray;
+                match self.state_to_event() {
+                    JsonEvent::NeedMoreInput => self.event1 = Ok(JsonEvent::EndArray),
+                    e => {
+                        self.event1 = Ok(e);
+                        self.event2 = JsonEvent::EndArray;
+                    }
                 }
                 self.state = OK;
             }
@@ -378,31 +400,31 @@ where
             // {
             -6 => {
                 if !self.push(MODE_KEY) {
-                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                    self.event1 = Err(ParserError::SyntaxError);
                     return;
                 }
                 self.state = OB;
-                self.event1 = JsonEvent::StartObject;
+                self.event1 = Ok(JsonEvent::StartObject);
             }
 
             // [
             -5 => {
                 if !self.push(MODE_ARRAY) {
-                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                    self.event1 = Err(ParserError::SyntaxError);
                     return;
                 }
                 self.state = AR;
-                self.event1 = JsonEvent::StartArray;
+                self.event1 = Ok(JsonEvent::StartArray);
             }
 
             // "
             -4 => {
                 if *self.stack.back().unwrap() == MODE_KEY {
                     self.state = CO;
-                    self.event1 = JsonEvent::FieldName;
+                    self.event1 = Ok(JsonEvent::FieldName);
                 } else {
                     self.state = OK;
-                    self.event1 = JsonEvent::ValueString;
+                    self.event1 = Ok(JsonEvent::ValueString);
                 }
             }
 
@@ -412,20 +434,20 @@ where
                     MODE_OBJECT => {
                         // A comma causes a flip from object mode to key mode.
                         if !self.pop(MODE_OBJECT) || !self.push(MODE_KEY) {
-                            self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                            self.event1 = Err(ParserError::SyntaxError);
                             return;
                         }
-                        self.event1 = self.state_to_event();
+                        self.event1 = Ok(self.state_to_event());
                         self.state = KE;
                     }
 
                     MODE_ARRAY => {
-                        self.event1 = self.state_to_event();
+                        self.event1 = Ok(self.state_to_event());
                         self.state = VA;
                     }
 
                     _ => {
-                        self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                        self.event1 = Err(ParserError::SyntaxError);
                     }
                 }
             }
@@ -434,7 +456,7 @@ where
             -2 => {
                 // A colon causes a flip from key mode to object mode.
                 if !self.pop(MODE_KEY) || !self.push(MODE_OBJECT) {
-                    self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                    self.event1 = Err(ParserError::SyntaxError);
                     return;
                 }
                 self.state = VA;
@@ -442,7 +464,7 @@ where
 
             // Bad action.
             _ => {
-                self.event1 = JsonEvent::Error(ParseErrorKind::SyntaxError);
+                self.event1 = Err(ParserError::SyntaxError);
             }
         }
     }
