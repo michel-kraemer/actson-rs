@@ -46,7 +46,7 @@ fn parse_fail_with_parser(json: &[u8], parser: &mut JsonParser<PushJsonFeeder>) 
     let mut i: usize = 0;
     loop {
         // feed as many bytes as possible to the parser
-        let mut e = match parser.next_event() {
+        let e = match parser.next_event() {
             Err(err) => return err,
             Ok(Some(ne)) => ne,
             Ok(None) => panic!("End of file before error happened"),
@@ -89,7 +89,7 @@ fn parse_until_next_event(
                     parser.feeder.done();
                 }
             }
-            Some(e) => return event,
+            Some(_) => return event,
             None => return None,
         }
     }

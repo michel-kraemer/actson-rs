@@ -10,6 +10,7 @@ enum Type {
 
 /// An error that can happen when pretty-printing a JSON string. Either the
 /// string cannot be parsed or a JSON value cannot be converted.
+#[allow(clippy::enum_variant_names)]
 #[derive(Error, Debug)]
 pub enum PrettyPrintError {
     #[error("{0}")]
