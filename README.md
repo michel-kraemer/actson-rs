@@ -4,6 +4,15 @@ Actson is a reactive JSON parser (sometimes referred to as non-blocking or
 asynchronous). It is event-based and can be used in asynchronous code (for
 example in combination with [Tokio](https://tokio.rs/)).
 
+<div align="center">
+  <br>
+  <br>
+  <img width="550" src="assets/teaser.webp" alt="Teaser Image">
+  <br>
+  <br>
+  <br>
+</div>
+
 ## Why another JSON parser?
 
 * **Non-blocking.** Other JSON parsers use blocking I/O. If you want to develop
