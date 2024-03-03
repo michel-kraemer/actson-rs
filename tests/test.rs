@@ -267,7 +267,7 @@ fn top_level_zero() {
     assert_json_eq(json, &parse(json));
 }
 
-/// Test if the parser returns an accurate amount when calling the `parsed_bytes()` method
+/// Test if the parser returns an accurate number when calling the `parsed_bytes()` method
 #[test]
 fn number_of_processed_bytes() {
     //                 16
@@ -275,7 +275,7 @@ fn number_of_processed_bytes() {
     //  ↓     ↓        ↓↓
     //  {"name": "Elvis"}
     let json = r#"{"name": "Elvis"}"#;
-    // the events and the corresponding bytes that are processed to produces them
+    // the events and the corresponding bytes that are processed to produce them
     let events_bytes = [
         (Some(JsonEvent::StartObject), 1),
         (Some(JsonEvent::FieldName), 7),
