@@ -1,0 +1,281 @@
+[
+  {
+    "filename": "data/Minnesota.geojson",
+    "len": 799100380,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 5.696225708,
+        "throughput_mb_per_sec": 140.28594036885028
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 3.866176791,
+        "throughput_mb_per_sec": 206.69007735502697
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 2.796268584,
+        "throughput_mb_per_sec": 285.77382894203413
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 3.496016125,
+        "throughput_mb_per_sec": 228.57456928920772
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 3.022221833,
+        "throughput_mb_per_sec": 264.408248022871
+      }
+    ]
+  },
+  {
+    "filename": "data/Idaho.geojson",
+    "len": 272032986,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 1.721263334,
+        "throughput_mb_per_sec": 158.042631029518
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 1.276645292,
+        "throughput_mb_per_sec": 213.0842354604477
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 0.9589235,
+        "throughput_mb_per_sec": 283.68580601059415
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 1.170298834,
+        "throughput_mb_per_sec": 232.4474553821524
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 1.033623167,
+        "throughput_mb_per_sec": 263.1839094604968
+      }
+    ]
+  },
+  {
+    "filename": "data/Oregon.geojson",
+    "len": 572461471,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 3.655964458,
+        "throughput_mb_per_sec": 156.58288738210706
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 2.670554125,
+        "throughput_mb_per_sec": 214.3605574741909
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 2.016203083,
+        "throughput_mb_per_sec": 283.9304610863945
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 2.438165125,
+        "throughput_mb_per_sec": 234.79192000992964
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 2.159692542,
+        "throughput_mb_per_sec": 265.0661887593813
+      }
+    ]
+  },
+  {
+    "filename": "data/California.geojson",
+    "len": 3598943044,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 40.806612958,
+        "throughput_mb_per_sec": 88.19509346938923
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 21.319367209,
+        "throughput_mb_per_sec": 168.81096932749023
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 12.561838292000001,
+        "throughput_mb_per_sec": 286.49811917193557
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 15.586913291,
+        "throughput_mb_per_sec": 230.89517320135838
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 13.545075041,
+        "throughput_mb_per_sec": 265.70122595159125
+      }
+    ]
+  },
+  {
+    "filename": "data/Georgia.geojson",
+    "len": 1119571788,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 10.749136958,
+        "throughput_mb_per_sec": 104.15457467650586
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 5.51746625,
+        "throughput_mb_per_sec": 202.9141162394967
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 3.905969958,
+        "throughput_mb_per_sec": 286.63092651466826
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 4.81371375,
+        "throughput_mb_per_sec": 232.5796352140798
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 4.249000167,
+        "throughput_mb_per_sec": 263.49064344482525
+      }
+    ]
+  },
+  {
+    "filename": "data/Alaska.geojson",
+    "len": 31456211,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 0.213195209,
+        "throughput_mb_per_sec": 147.5465192090691
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 0.1498025,
+        "throughput_mb_per_sec": 209.98455299477644
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 0.111803458,
+        "throughput_mb_per_sec": 281.35275565448075
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 0.140003333,
+        "throughput_mb_per_sec": 224.6818723951379
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 0.120590833,
+        "throughput_mb_per_sec": 260.850764667991
+      }
+    ]
+  },
+  {
+    "filename": "data/Vermont.geojson",
+    "len": 92185624,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 0.637706375,
+        "throughput_mb_per_sec": 144.55810324932062
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 0.443119,
+        "throughput_mb_per_sec": 208.03807555081139
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 0.32348425,
+        "throughput_mb_per_sec": 284.97716349404953
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 0.401042,
+        "throughput_mb_per_sec": 229.86526099510772
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 0.352348708,
+        "throughput_mb_per_sec": 261.631792332271
+      }
+    ]
+  },
+  {
+    "filename": "data/Florida.geojson",
+    "len": 2162933347,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 20.9713795,
+        "throughput_mb_per_sec": 103.1373900319719
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 11.632697708,
+        "throughput_mb_per_sec": 185.93566181235113
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 7.52185625,
+        "throughput_mb_per_sec": 287.55313517191985
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 9.318395208,
+        "throughput_mb_per_sec": 232.11436075850114
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 8.209193,
+        "throughput_mb_per_sec": 263.47697599508257
+      }
+    ]
+  },
+  {
+    "filename": "data/NorthCarolina.geojson",
+    "len": 1313670108,
+    "benchmark_results": [
+      {
+        "name": "serde-json",
+        "elapsed_seconds": 12.010944333,
+        "throughput_mb_per_sec": 109.37275800960121
+      },
+      {
+        "name": "serde-json-struct",
+        "elapsed_seconds": 6.358785375,
+        "throughput_mb_per_sec": 206.5913583378335
+      },
+      {
+        "name": "Actson (BufReader)",
+        "elapsed_seconds": 4.574837709,
+        "throughput_mb_per_sec": 287.1511934544999
+      },
+      {
+        "name": "Actson (Tokio)",
+        "elapsed_seconds": 5.643279,
+        "throughput_mb_per_sec": 232.78489473938822
+      },
+      {
+        "name": "Actson (Tokio, two tasks)",
+        "elapsed_seconds": 4.9766812080000005,
+        "throughput_mb_per_sec": 263.965091010507
+      }
+    ]
+  }
+]
