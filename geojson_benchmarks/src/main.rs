@@ -1,20 +1,13 @@
-use actson::tokio::AsyncBufReaderJsonFeeder;
+use ::serde::Serialize;
 use anyhow::{Context, Ok, Result};
-use geojson::FeatureCollection;
-use serde::Serialize;
-use serde_json::Value;
+use std::fs::File;
 use std::future::Future;
 use std::path::PathBuf;
 use std::time::Instant;
-use std::{fs::File, io::BufReader};
 use tokio::fs::{self};
-use tokio::io::AsyncReadExt;
-use tokio::sync::mpsc;
 
-use actson::feeder::{BufReaderJsonFeeder, PushJsonFeeder};
-use actson::{JsonEvent, JsonParser};
-
-mod geojson;
+mod actson;
+mod serde;
 
 #[derive(Serialize)]
 struct BenchmarkFileResult<'a> {
@@ -57,132 +50,6 @@ where
     Ok(r)
 }
 
-async fn bench_serde_json(path: &PathBuf) -> Result<u64> {
-    let file = File::open(path)?;
-    let len = file.metadata()?.len();
-    let reader = BufReader::new(file);
-
-    let _: Value = serde_json::from_reader(reader)?;
-
-    Ok(len)
-}
-
-async fn bench_serde_json_struct(path: &PathBuf) -> Result<u64> {
-    let file = File::open(path)?;
-    let len = file.metadata()?.len();
-    let reader = BufReader::new(file);
-
-    let _: FeatureCollection = serde_json::from_reader(reader)?;
-
-    Ok(len)
-}
-
-async fn bench_actson_bufreader(path: &PathBuf) -> Result<u64> {
-    let file = File::open(path)?;
-    let len = file.metadata()?.len();
-    let reader = BufReader::new(file);
-
-    let feeder = BufReaderJsonFeeder::new(reader);
-    let mut parser = JsonParser::new(feeder);
-    while let Some(event) = parser.next_event()? {
-        match event {
-            JsonEvent::NeedMoreInput => parser.feeder.fill_buf()?,
-
-            // make sure all values are parsed
-            JsonEvent::FieldName => _ = parser.current_str(),
-            JsonEvent::ValueString => _ = parser.current_str(),
-            JsonEvent::ValueInt => _ = parser.current_int::<i64>(),
-            JsonEvent::ValueFloat => _ = parser.current_float(),
-
-            _ => {}
-        }
-    }
-
-    Ok(len)
-}
-
-async fn bench_actson_tokio(path: &PathBuf) -> Result<u64> {
-    let file = tokio::fs::File::open(path).await?;
-    let len = file.metadata().await?.len();
-    let reader = tokio::io::BufReader::new(file);
-
-    let feeder = AsyncBufReaderJsonFeeder::new(reader);
-    let mut parser = JsonParser::new(feeder);
-    while let Some(event) = parser.next_event()? {
-        match event {
-            JsonEvent::NeedMoreInput => parser.feeder.fill_buf().await?,
-
-            // make sure all values are parsed
-            JsonEvent::FieldName => _ = parser.current_str(),
-            JsonEvent::ValueString => _ = parser.current_str(),
-            JsonEvent::ValueInt => _ = parser.current_int::<i64>(),
-            JsonEvent::ValueFloat => _ = parser.current_float(),
-
-            _ => {} // do something useful with the event
-        }
-    }
-
-    Ok(len)
-}
-
-async fn bench_actson_tokio_twotasks(path: &PathBuf) -> Result<u64> {
-    let (tx, mut rx) = mpsc::channel(1);
-
-    let mut file = tokio::fs::File::open(path).await?;
-    let len = file.metadata().await?.len();
-
-    let reader_task = tokio::spawn(async move {
-        loop {
-            let mut buf = vec![0; 65 * 1024];
-            let r = file.read(&mut buf).await?;
-            if r == 0 {
-                break;
-            }
-            buf.truncate(r);
-            tx.send(buf).await?;
-        }
-
-        Ok(())
-    });
-
-    let parser_task = tokio::spawn(async move {
-        let feeder = PushJsonFeeder::new();
-        let mut parser = JsonParser::new(feeder);
-        let mut i = 0;
-        let mut buf = Vec::new();
-        while let Some(event) = parser.next_event()? {
-            match event {
-                JsonEvent::NeedMoreInput => {
-                    i += parser.feeder.push_bytes(&buf[i..]);
-                    if i == buf.len() {
-                        if let Some(b) = rx.recv().await {
-                            buf = b;
-                            i = 0;
-                        } else {
-                            parser.feeder.done();
-                        }
-                    }
-                }
-
-                // make sure all values are parsed
-                JsonEvent::FieldName => _ = parser.current_str(),
-                JsonEvent::ValueString => _ = parser.current_str(),
-                JsonEvent::ValueInt => _ = parser.current_int::<i64>(),
-                JsonEvent::ValueFloat => _ = parser.current_float(),
-
-                _ => {} // do something useful with the event
-            }
-        }
-
-        Ok(())
-    });
-
-    reader_task.await??;
-    parser_task.await??;
-
-    Ok(len)
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut files = fs::read_dir("data").await?;
@@ -204,20 +71,14 @@ async fn main() -> Result<()> {
         let len = f.metadata().await?.len();
         let mut benchmark_results = Vec::new();
 
-        benchmark_results.push(bench_parser(&path, "serde-json", bench_serde_json).await?);
+        benchmark_results.push(bench_parser(&path, "serde-json", serde::bench_value).await?);
         benchmark_results
-            .push(bench_parser(&path, "serde-json-struct", bench_serde_json_struct).await?);
+            .push(bench_parser(&path, "serde-json-struct", serde::bench_struct).await?);
         benchmark_results
-            .push(bench_parser(&path, "Actson (BufReader)", bench_actson_bufreader).await?);
-        benchmark_results.push(bench_parser(&path, "Actson (Tokio)", bench_actson_tokio).await?);
-        benchmark_results.push(
-            bench_parser(
-                &path,
-                "Actson (Tokio, two tasks)",
-                bench_actson_tokio_twotasks,
-            )
-            .await?,
-        );
+            .push(bench_parser(&path, "Actson (BufReader)", actson::bench_bufreader).await?);
+        benchmark_results.push(bench_parser(&path, "Actson (Tokio)", actson::bench_tokio).await?);
+        benchmark_results
+            .push(bench_parser(&path, "Actson (Tokio, two tasks)", actson::tokio_twotasks).await?);
 
         file_results.push(BenchmarkFileResult {
             filename: path_str,
