@@ -71,14 +71,28 @@ async fn main() -> Result<()> {
         let len = f.metadata().await?.len();
         let mut benchmark_results = Vec::new();
 
-        benchmark_results.push(bench_parser(&path, "serde-json", serde::bench_value).await?);
-        benchmark_results
-            .push(bench_parser(&path, "serde-json-struct", serde::bench_struct).await?);
-        benchmark_results
-            .push(bench_parser(&path, "Actson (BufReader)", actson::bench_bufreader).await?);
-        benchmark_results.push(bench_parser(&path, "Actson (Tokio)", actson::bench_tokio).await?);
-        benchmark_results
-            .push(bench_parser(&path, "Actson (Tokio, two tasks)", actson::tokio_twotasks).await?);
+        let sjr = bench_parser(&path, "Serde JSON (Value)", serde::bench_value).await?;
+        benchmark_results.push(sjr);
+
+        let sjs = bench_parser(&path, "Serde JSON (struct)", serde::bench_struct).await?;
+        benchmark_results.push(sjs);
+
+        let sjcd = bench_parser(
+            &path,
+            "Serde JSON (custom deserializer)",
+            serde::bench_custom_deser,
+        )
+        .await?;
+        benchmark_results.push(sjcd);
+
+        let abr = bench_parser(&path, "Actson (BufReader)", actson::bench_bufreader).await?;
+        benchmark_results.push(abr);
+
+        let at = bench_parser(&path, "Actson (Tokio)", actson::bench_tokio).await?;
+        benchmark_results.push(at);
+
+        let att = bench_parser(&path, "Actson (Tokio, two tasks)", actson::tokio_twotasks).await?;
+        benchmark_results.push(att);
 
         file_results.push(BenchmarkFileResult {
             filename: path_str,
