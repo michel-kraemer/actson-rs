@@ -1,4 +1,4 @@
-use std::{fs::File, io::BufReader, path::PathBuf};
+use std::{fs::File, io::BufReader};
 
 use actson::{
     feeder::{BufReaderJsonFeeder, PushJsonFeeder},
@@ -8,7 +8,7 @@ use actson::{
 use anyhow::{Ok, Result};
 use tokio::{io::AsyncReadExt, sync::mpsc};
 
-pub async fn bench_bufreader(path: &PathBuf) -> Result<u64> {
+pub async fn bench_bufreader(path: &str) -> Result<u64> {
     let file = File::open(path)?;
     let len = file.metadata()?.len();
     let reader = BufReader::new(file);
@@ -32,7 +32,7 @@ pub async fn bench_bufreader(path: &PathBuf) -> Result<u64> {
     Ok(len)
 }
 
-pub async fn bench_tokio(path: &PathBuf) -> Result<u64> {
+pub async fn bench_tokio(path: &str) -> Result<u64> {
     let file = tokio::fs::File::open(path).await?;
     let len = file.metadata().await?.len();
     let reader = tokio::io::BufReader::new(file);
@@ -56,7 +56,7 @@ pub async fn bench_tokio(path: &PathBuf) -> Result<u64> {
     Ok(len)
 }
 
-pub async fn tokio_twotasks(path: &PathBuf) -> Result<u64> {
+pub async fn tokio_twotasks(path: &str) -> Result<u64> {
     let (tx, mut rx) = mpsc::channel(1);
 
     let mut file = tokio::fs::File::open(path).await?;

@@ -17,25 +17,29 @@
 
 ## Benchmarks
 
-### Actson (BufReader)
+### actson-bufreader
 
 Reads the input file with a `BufReader` and parses the read bytes with Actson.
 
-### Actson (Tokio)
+### actson-tokio
 
 Uses Tokio to asynchronously read the input file. Parses it with Actson.
 
-### Actson (Tokio, two tasks)
+### actson-tokio-twotasks
 
 Uses two Tokio tasks: one that reads the file asynchronously and one that parses the read bytes with Actson. The tasks communicate with each other through a channel. This benchmark demonstrates how reading and parsing can happen concurrently.
 
-### serde-json
+### serde-value
 
 Parses the JSON file with Serde JSON into a `Value`.
 
-### serde-json-struct
+### serde-struct
 
 Deserializes the JSON file with Serde JSON into a `struct`.
+
+### serde-custom-deserializer
+
+Uses a Serde JSON with a custom deserializer to avoid having to load the whole file into memory (see [example on the Serde website](https://serde.rs/stream-array.html)).
 
 ## Downloading the test data
 
@@ -88,17 +92,10 @@ unzip Vermont.geojson.zip
 
 ## Running
 
-After downloading the test data, run the following command:
+In order to run the benchmarks, you need `hyperfine` installed on your system. Download it [here](https://github.com/sharkdp/hyperfine) if you do not have it already.
 
-    cargo run -r
+Execute the following script to run all benchmarks:
 
-This will run all benchmarks and write the results to [`results.json`](results.json).
+    ./run-all.sh
 
-Open the provided Jupyter Notebook [`results.ipynb`](results.ipynb) to visualize the results.
-
-> [!NOTE]
-> To obtain reproducible results, you should clear your disk cache before running the benchmarks. On macOS, you can do this with the following command:
->
->     sudo purge
->
-> Other operating systems should have similar commands.
+The command will run for about 40-45 minutes, depending on your system. It will write the result to [`results.json`](results.json). Open the provided Jupyter Notebook [`results.ipynb`](results.ipynb) to visualize them.

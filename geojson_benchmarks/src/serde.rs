@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde_json::Value;
-use std::{collections::HashMap, fmt, fs::File, io::BufReader, marker::PhantomData, path::PathBuf};
+use std::{collections::HashMap, fmt, fs::File, io::BufReader, marker::PhantomData};
 
 use serde::{
     de::{SeqAccess, Visitor},
@@ -75,7 +75,7 @@ where
     deserializer.deserialize_seq(visitor)
 }
 
-pub async fn bench_value(path: &PathBuf) -> Result<u64> {
+pub async fn bench_value(path: &str) -> Result<u64> {
     let file = File::open(path)?;
     let len = file.metadata()?.len();
     let reader = BufReader::new(file);
@@ -85,7 +85,7 @@ pub async fn bench_value(path: &PathBuf) -> Result<u64> {
     Ok(len)
 }
 
-pub async fn bench_struct(path: &PathBuf) -> Result<u64> {
+pub async fn bench_struct(path: &str) -> Result<u64> {
     let file = File::open(path)?;
     let len = file.metadata()?.len();
     let reader = BufReader::new(file);
@@ -95,7 +95,7 @@ pub async fn bench_struct(path: &PathBuf) -> Result<u64> {
     Ok(len)
 }
 
-pub async fn bench_custom_deser(path: &PathBuf) -> Result<u64> {
+pub async fn bench_custom_deser(path: &str) -> Result<u64> {
     let file = File::open(path)?;
     let len = file.metadata()?.len();
     let reader = BufReader::new(file);

@@ -1,6 +1,6 @@
 # Actson [![Actions Status](https://github.com/michel-kraemer/actson-rs/workflows/Rust/badge.svg)](https://github.com/michel-kraemer/actson-rs/actions) [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Latest Version](https://img.shields.io/crates/v/actson.svg)](https://crates.io/crates/actson) [![Documentation](https://img.shields.io/docsrs/actson/latest)](https://docs.rs/actson/latest/actson/)
 
-Actson is a reactive JSON parser (sometimes referred to as non-blocking or
+Actson is a low-level reactive JSON parser (sometimes referred to as non-blocking or
 asynchronous). It is event-based and can be used in asynchronous code (for
 example in combination with [Tokio](https://tokio.rs/)).
 
@@ -15,15 +15,16 @@ example in combination with [Tokio](https://tokio.rs/)).
 
 ## Why another JSON parser?
 
-* **Non-blocking.** Other JSON parsers use blocking I/O. If you want to develop
+* **Non-blocking.** Other JSON parsers rely on blocking I/O. If you want to develop
   a reactive application you should use non-blocking I/O (see the
   [Reactive Manifesto](http://www.reactivemanifesto.org/)).
 * **Big Data.** Most parsers read the full JSON text into memory to map it to
   a struct. Actson can handle arbitrarily large JSON text and exhibits constant throughput (see the [Performance](#performance) section below).
 * **Event-based.** Actson produces events during parsing and can be used for streaming. For example, if you write an HTTP server, you can receive a file and parse it at the same time without having to load it into memory.
-* **GeoRocket.** Actson was primarily developed for the [GeoJSON](http://geojson.org/)
-  support in [GeoRocket](http://georocket.io), a high-performance reactive data
-  store for geospatial files.
+
+Actson was primarily developed for the [GeoJSON](http://geojson.org/) support in [GeoRocket](http://georocket.io), a high-performance reactive data store for geospatial files. For this application, we needed a way to parse very large JSON files with varying contents. The files are received through an HTTP server, parsed into JSON events while they are being read from the socket, and indexed into a database at the same time. The whole process runs asynchronously.
+
+If this use case sounds familiar, then Actson might be a good solution for you. Read more about its [performance](#performance) section below and how it [compares to Serde JSON](#should-i-use-actson-or-serde-json) below.
 
 ## Usage
 
@@ -177,16 +178,17 @@ case, you're most likely better off using Serde JSON directly.
 
 Actson has been optimized to perform best with large files. It scales linearly, which means it exhibits constant parsing speed and memory consumption regardless of the size of the input JSON text.
 
-The figures below show the parser's [throughput](#throughput-higher-is-better) and [runtime](#runtime-lower-is-better) for different input files and in comparison to [Serde JSON](https://github.com/serde-rs/json). Actson performs better than Serde JSON for every file tested. Since Serde JSON needs to load the whole JSON document into memory, its throughput collapses and its runtime grows exponentially the larger the input files become. On the other hand, Actson's throughput stays constant and its runtime only grows linearly with the input size.
+The figures below show the parser's [throughput](#throughput-higher-is-better) and [runtime](#runtime-lower-is-better) for different [GeoJSON](https://geojson.org/) input files and in comparison to [Serde JSON](https://github.com/serde-rs/json).
 
-Read more about the benchmarks [here](geojson_benchmarks/README.md).
+Actson with a `BufReader` performs best on every file tested (`actson-bufreader` benchmark). Its throughput stays constant and its runtime only grows linearly with the input size.
 
-> [!NOTE]
-> Full disclosure: The input files are in the range of 30 MB to 3.6 GB. As said above, Actson has been optimized to perform best with large files.
->
-> However, **if your JSON input files are small (a few KB or maybe 1 or 2 MB), you should use [Serde JSON](https://github.com/serde-rs/json)** as it will perform much better than Actson.
->
-> On the other hand, **if you require scalability and your input files can be of arbitrary size, or if you want to parse JSON asynchronously, use Actson.**
+The same applies to the other Actson benchmarks using Tokio (`actson-tokio` and `actson-tokio-twotasks`). Asynchronous code has a slight overhead, which is mostly compensated for by using two concurrently running Tokio tasks (`actson-tokio-twotasks`).
+
+The `serde-value` benchmark shows that the parser's throughput collapses the larger the file becomes. This is because it has to load its entire contents into memory (into a Serde JSON `Value`). The `serde-struct` benchmark deserializes the file into a struct that replicates the [GeoJSON](https://geojson.org/) format. It suffers from the same issue as the `serde-value` benchmark, namely that the whole file has to be loaded into memory. In this case, the impact on the throughput is not visible in the figure since the custom struct is smaller than Serde JSON's `Value` and the test system had 36 GB of RAM.
+
+The `serde-custom-deser` benchmark is the only Serde benchmark whose performance is on par with the slowest asynchronous Actson benchmark `actson-tokio` (which runs with only one Tokio task). This is because `serde-custom-deser` uses a custom deserializer, which avoids having to load the whole file into memory (see [example on the Serde website](https://serde.rs/stream-array.html)). This very specific implementation only works because the structure of the input files is known and the used GeoJSON files are not deeply nested. The solution is not generalizable.
+
+Read more about the individual benchmarks and the test files [here](geojson_benchmarks/README.md).
 
 ### Throughput (higher is better)
 
@@ -199,6 +201,24 @@ Read more about the benchmarks [here](geojson_benchmarks/README.md).
 <img width="750" src="assets/results-runtime.svg" alt="Runtime">
 
 *Tested on a MacBook Pro 16" 2023 with an M3 Pro Chip and 36 GB of RAM.*
+
+## Should I use Actson or Serde JSON?
+
+As can be seen from the benchmarks above, Actson performs best with large files. However, if your JSON input files are small (a few KB or maybe 1 or 2 MB), you should probably stick to [Serde JSON](https://github.com/serde-rs/json), which is a rock-solid, battle-tested parser and which will perform extremely fast in this case.
+
+On the other hand, if you require scalability and your input files can be of arbitrary size, or if you want to parse JSON asynchronously, use Actson.
+
+The aim of this section is not to make one parser appear better than the other. Actson and Serde JSON are two very distinct libraries that each have their advantages and disadvantages. The following table may help you decide whether you require Actson or if you should prefer Serde JSON:
+
+| Actson | Serde JSON |
+|--------|------------|
+| The input files can be of arbitrary size (several GB) | The input files are just a few KB or MB in size |
+| The JSON text is streamed, e.g. through a web server | The JSON text is stored on the file system or in memory |
+| You want to concurrently read and parse the JSON text | Sequential parsing is sufficient |
+| Parsing should not block other tasks in your application ([reactive](http://www.reactivemanifesto.org/) [programming](https://en.wikipedia.org/wiki/Reactive_programming)) | The JSON text is so small that parsing is quick enough, or your application is not reactive and does not run multiple tasks in parallel |
+| You want to process individual JSON events | You prefer convenience and do not care about events |
+| The structure of the JSON text can vary or is not known at all | The structure is very well known |
+| You don't require deserialization (mapping the JSON text to a struct), or deserialization is impossible due to the varying or unknown structure of the JSON text | You want and can deserialize the JSON text into a struct |
 
 ## Compliance
 
