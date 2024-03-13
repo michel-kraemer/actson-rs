@@ -1,7 +1,6 @@
 # Actson [![Actions Status](https://github.com/michel-kraemer/actson-rs/workflows/Rust/badge.svg)](https://github.com/michel-kraemer/actson-rs/actions) [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Latest Version](https://img.shields.io/crates/v/actson.svg)](https://crates.io/crates/actson) [![Documentation](https://img.shields.io/docsrs/actson/latest)](https://docs.rs/actson/latest/actson/)
 
-Actson is a low-level reactive JSON parser (sometimes referred to as non-blocking or
-asynchronous). It is event-based and can be used in asynchronous code (for
+Actson is a low-level JSON parser for reactive applications and non-blocking I/O. It is event-based and can be used in asynchronous code (for
 example in combination with [Tokio](https://tokio.rs/)).
 
 <div align="center">
@@ -15,16 +14,14 @@ example in combination with [Tokio](https://tokio.rs/)).
 
 ## Why another JSON parser?
 
-* **Non-blocking.** Other JSON parsers rely on blocking I/O. If you want to develop
-  a reactive application you should use non-blocking I/O (see the
-  [Reactive Manifesto](http://www.reactivemanifesto.org/)).
-* **Big Data.** Most parsers read the full JSON text into memory to map it to
-  a struct. Actson can handle arbitrarily large JSON text and exhibits constant throughput (see the [Performance](#performance) section below).
-* **Event-based.** Actson produces events during parsing and can be used for streaming. For example, if you write an HTTP server, you can receive a file and parse it at the same time without having to load it into memory.
+* **Non-blocking.** Reactive applications should use non-blocking I/O so that no thread needs to wait indefinitely for a shared resource to become available (see the
+  [Reactive Manifesto](http://www.reactivemanifesto.org/)). Actson supports this pattern.
+* **Big Data.** Actson can handle arbitrarily large JSON text without having to completely load it into memory. It is very fast and achieves constant parsing throughput (see the [Performance](#performance) section below).
+* **Event-based.** Actson produces events during parsing and can be used for streaming. For example, if you write an HTTP server, you can receive a file and parse it at the same time.
 
 Actson was primarily developed for the [GeoJSON](http://geojson.org/) support in [GeoRocket](http://georocket.io), a high-performance reactive data store for geospatial files. For this application, we needed a way to parse very large JSON files with varying contents. The files are received through an HTTP server, parsed into JSON events while they are being read from the socket, and indexed into a database at the same time. The whole process runs asynchronously.
 
-If this use case sounds familiar, then Actson might be a good solution for you. Read more about its [performance](#performance) section below and how it [compares to Serde JSON](#should-i-use-actson-or-serde-json) below.
+If this use case sounds familiar, then Actson might be a good solution for you. Read more about its [performance](#performance) and how it [compares to Serde JSON](#should-i-use-actson-or-serde-json) below.
 
 ## Usage
 
@@ -77,7 +74,8 @@ parse the JSON document and to produce events. Whenever you get
 to asynchronously read more bytes from the input and to provide them to
 the parser.
 
-*Heads up:* The `tokio` feature has to be enabled for this. It is disabled
+> [!NOTE]
+> The `tokio` feature has to be enabled for this. It is disabled
 by default.
 
 ```rust
@@ -107,9 +105,10 @@ async fn main() {
 
 `BufReaderJsonFeeder` allows you to feed the parser from a `std::io::BufReader`.
 
-*Note:* By following this synchronous and blocking approach, you are missing
-out on Actson's reactive properties. We recommend using Actson together
-with Tokio instead to parse JSON asynchronously (see above).
+> [!NOTE]
+> By following this synchronous and blocking approach, you are missing
+> out on Actson's reactive properties. We recommend using Actson together
+> with Tokio instead to parse JSON asynchronously (see above).
 
 ```rust
 use actson::{JsonParser, JsonEvent};
@@ -158,7 +157,8 @@ while let Some(event) = parser.next_event().unwrap() {
 For testing and compatibility reasons, Actson is able to parse a byte slice
 into a [Serde JSON](https://github.com/serde-rs/json) Value.
 
-*Heads up:* You need to enable the `serde_json` feature for this.
+> [!NOTE]
+> You need to enable the `serde_json` feature for this.
 
 ```rust
 use actson::serde_json::from_slice;
@@ -172,7 +172,7 @@ assert_eq!(value["name"], "Elvis");
 
 However, if you find yourself doing this, you probably don't need the reactive
 features of Actson and your data seems to completely fit into memory. In this
-case, you're most likely better off using Serde JSON directly.
+case, you're most likely better off using Serde JSON directly (see the [comparison](#should-i-use-actson-or-serde-json) below)
 
 ## Performance
 
@@ -208,7 +208,7 @@ As can be seen from the benchmarks above, Actson performs best with large files.
 
 On the other hand, if you require scalability and your input files can be of arbitrary size, or if you want to parse JSON asynchronously, use Actson.
 
-The aim of this section is not to make one parser appear better than the other. Actson and Serde JSON are two very distinct libraries that each have their advantages and disadvantages. The following table may help you decide whether you require Actson or if you should prefer Serde JSON:
+The aim of this section is not to make one parser appear better than the other. Actson and Serde JSON are two very distinct libraries that each have advantages and disadvantages. The following table may help you decide whether you require Actson or if you should prefer Serde JSON:
 
 | Actson | Serde JSON |
 |--------|------------|
