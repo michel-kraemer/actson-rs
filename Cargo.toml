@@ -3,7 +3,7 @@ members = ["geojson_benchmarks"]
 
 [package]
 name = "actson"
-version = "0.5.0"
+version = "1.0.0"
 authors = ["Michel Kraemer <michel@undercouch.de>"]
 description = "A reactive (or non-blocking, or asynchronous) JSON parser"
 edition = "2021"
