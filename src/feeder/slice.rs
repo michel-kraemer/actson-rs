@@ -7,6 +7,7 @@ pub struct SliceJsonFeeder<'a> {
 }
 
 impl<'a> SliceJsonFeeder<'a> {
+    /// Create a new feeder that wraps around the given byte slice
     pub fn new(slice: &'a [u8]) -> Self {
         SliceJsonFeeder { slice, pos: 0 }
     }

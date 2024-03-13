@@ -13,6 +13,7 @@ impl<T> BufReaderJsonFeeder<T>
 where
     T: Read,
 {
+    /// Create a new feeder that reads from the given [`BufReader`]
     pub fn new(reader: BufReader<T>) -> Self {
         BufReaderJsonFeeder {
             reader,

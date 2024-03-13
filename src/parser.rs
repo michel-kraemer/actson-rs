@@ -222,6 +222,7 @@ impl<T> JsonParser<T>
 where
     T: JsonFeeder,
 {
+    /// Create a new JSON parser using the given [`JsonFeeder`]
     pub fn new(feeder: T) -> Self {
         JsonParser {
             feeder,
@@ -235,6 +236,8 @@ where
         }
     }
 
+    /// Create a new JSON parser using the given [`JsonFeeder`] and with a
+    /// defined maximum stack depth
     pub fn new_with_max_depth(feeder: T, max_depth: usize) -> Self {
         JsonParser {
             feeder,
@@ -248,6 +251,8 @@ where
         }
     }
 
+    /// Push to the stack. Return `false` if the maximum stack depth has been
+    /// exceeded.
     fn push(&mut self, mode: i8) -> bool {
         if self.stack.len() >= self.depth {
             return false;
@@ -257,7 +262,7 @@ where
     }
 
     /// Pop the stack, assuring that the current mode matches the expectation.
-    /// Returns `false` if there is underflow or if the modes mismatch.
+    /// Return `false` if there is underflow or if the modes mismatch.
     fn pop(&mut self, mode: i8) -> bool {
         if self.stack.is_empty() || *self.stack.back().unwrap() != mode {
             return false;
@@ -478,10 +483,15 @@ where
         }
     }
 
+    /// Get the value of the string that has just been parsed. Call this
+    /// function after you've received [`JsonEvent::FieldName`](JsonEvent#variant.FieldName)
+    /// or [`JsonEvent::ValueString`](JsonEvent#variant.ValueString).
     pub fn current_str(&self) -> Result<&str, InvalidStringValueError> {
         Ok(from_utf8(&self.current_buffer)?)
     }
 
+    /// Get the value of the integer that has just been parsed. Call this
+    /// function after you've received [`JsonEvent::ValueInt`](JsonEvent#variant.ValueInt).
     pub fn current_int<I>(&self) -> Result<I, InvalidIntValueError>
     where
         I: FromPrimitive + Zero + CheckedAdd + CheckedSub + CheckedMul,
@@ -489,10 +499,13 @@ where
         Ok(btoi::btoi(&self.current_buffer)?)
     }
 
+    /// Get the value of the float that has just been parsed. Call this
+    /// function after you've received [`JsonEvent::ValueFloat`](JsonEvent#variant.ValueFloat).
     pub fn current_float(&self) -> Result<f64, InvalidFloatValueError> {
         Ok(self.current_str()?.parse()?)
     }
 
+    /// Return the number of bytes parsed so far
     pub fn parsed_bytes(&self) -> usize {
         self.parsed_bytes
     }

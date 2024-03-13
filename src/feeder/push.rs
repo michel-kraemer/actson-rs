@@ -28,6 +28,7 @@ pub struct PushJsonFeeder {
 }
 
 impl PushJsonFeeder {
+    /// Create a new push-based feeder
     pub fn new() -> Self {
         PushJsonFeeder {
             input: VecDeque::with_capacity(1024),

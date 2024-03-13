@@ -12,6 +12,7 @@ impl<T> AsyncBufReaderJsonFeeder<T>
 where
     T: AsyncRead + Unpin,
 {
+    /// Create a new feeder that reads from the given asynchronous [`BufReader`]
     pub fn new(reader: BufReader<T>) -> Self {
         AsyncBufReaderJsonFeeder {
             reader,
