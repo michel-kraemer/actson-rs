@@ -20,5 +20,7 @@ jobs:
         submodules: recursive
     - name: Build
       run: cargo build --all-features --workspace
+    - name: Build benchmarks
+      run: cargo bench --no-run --all-features
     - name: Run tests
       run: cargo test --all-features
