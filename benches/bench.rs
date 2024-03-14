@@ -1,9 +1,8 @@
 use std::fs;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use serde_json::Value;
 
-use actson::{feeder::SliceJsonFeeder, serde_json::from_slice, JsonEvent, JsonParser};
+use actson::{feeder::SliceJsonFeeder, JsonEvent, JsonParser};
 
 fn make_large(json: &str) -> String {
     let mut large = String::from("{");
@@ -73,27 +72,31 @@ fn actson_benchmark(c: &mut Criterion) {
         })
     });
 
+    #[cfg(feature = "serde_json")]
     c.bench_function("actson_serde", |b| {
         b.iter(|| {
-            from_slice(json_bytes).unwrap();
+            actson::serde_json::from_slice(json_bytes).unwrap();
         })
     });
 
+    #[cfg(feature = "serde_json")]
     c.bench_function("actson_serde_large", |b| {
         b.iter(|| {
-            from_slice(json_large_bytes).unwrap();
+            actson::serde_json::from_slice(json_large_bytes).unwrap();
         })
     });
 
+    #[cfg(feature = "serde_json")]
     c.bench_function("serde", |b| {
         b.iter(|| {
-            let _: Value = serde_json::from_str(&json).unwrap();
+            let _: serde_json::Value = serde_json::from_str(&json).unwrap();
         })
     });
 
+    #[cfg(feature = "serde_json")]
     c.bench_function("serde_large", |b| {
         b.iter(|| {
-            let _: Value = serde_json::from_str(&json_large).unwrap();
+            let _: serde_json::Value = serde_json::from_str(&json_large).unwrap();
         })
     });
 }
