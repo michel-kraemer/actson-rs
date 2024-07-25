@@ -5,6 +5,7 @@ mod tokio;
 use std::fs;
 
 use actson::feeder::PushJsonFeeder;
+use actson::options::JsonParserOptionsBuilder;
 use actson::parser::ParserError;
 use actson::{JsonEvent, JsonParser};
 use prettyprinter::PrettyPrinter;
@@ -113,7 +114,12 @@ fn test_pass() {
 #[test]
 fn test_fail() {
     let feeder = PushJsonFeeder::new();
-    let mut parser = JsonParser::new_with_max_depth(feeder, 16);
+    let mut parser = JsonParser::new_with_options(
+        feeder,
+        JsonParserOptionsBuilder::default()
+            .with_max_depth(16)
+            .build(),
+    );
     for i in 2..=34 {
         let json = fs::read_to_string(format!("tests/fixtures/fail{}.txt", i)).unwrap();
 
@@ -347,4 +353,99 @@ fn test_suite_fail() {
             parse_fail(&json); // ignore return value - we accept any error
         }
     }
+}
+
+/// Test if multiple top-level numbers can be parsed in streaming mode
+#[test]
+fn streaming_numbers() {
+    let options = JsonParserOptionsBuilder::default()
+        .with_streaming(true)
+        .build();
+    let json = r#"1 2 3 4 5"#;
+
+    let feeder = PushJsonFeeder::new();
+    let r = parse_with_parser(json, &mut JsonParser::new_with_options(feeder, options));
+
+    assert_eq!("12345", r);
+}
+
+/// Test if multiple top-level strings can be parsed in streaming mode
+#[test]
+fn streaming_strings() {
+    let options = JsonParserOptionsBuilder::default()
+        .with_streaming(true)
+        .build();
+    let json = r#""1""2" "3""4"   "5""#;
+
+    let feeder = PushJsonFeeder::new();
+    let r = parse_with_parser(json, &mut JsonParser::new_with_options(feeder, options));
+
+    assert_eq!(r#""1""2""3""4""5""#, r);
+}
+
+/// Test if multiple top-level arrays can be parsed in streaming mode
+#[test]
+fn streaming_arrays() {
+    let options = JsonParserOptionsBuilder::default()
+        .with_streaming(true)
+        .build();
+    let json = r#"[1][2][3][4][5]"#;
+
+    let feeder = PushJsonFeeder::new();
+    let r = parse_with_parser(json, &mut JsonParser::new_with_options(feeder, options));
+
+    assert_eq!("[\n  1\n][\n  2\n][\n  3\n][\n  4\n][\n  5\n]", r);
+}
+
+/// Test if multiple top-level objects can be parsed in streaming mode
+#[test]
+fn streaming_objects() {
+    let options = JsonParserOptionsBuilder::default()
+        .with_streaming(true)
+        .build();
+    let json = r#"{"a":1}{"b":2}{"c":3}{"d":4}{"e":5}"#;
+
+    let feeder = PushJsonFeeder::new();
+    let r = parse_with_parser(json, &mut JsonParser::new_with_options(feeder, options));
+
+    assert_eq!(
+        r#"{
+  "a": 1
+}{
+  "b": 2
+}{
+  "c": 3
+}{
+  "d": 4
+}{
+  "e": 5
+}"#,
+        r
+    );
+}
+
+/// Test if multiple top-level numbers can be parsed in streaming mode
+#[test]
+fn streaming_complex() {
+    let options = JsonParserOptionsBuilder::default()
+        .with_streaming(true)
+        .build();
+    let json = r#"1.0 2"3"{"a":4}5
+    6e-5["b"]["c"] 7{"d":"e"}true8falsenull"#;
+
+    let feeder = PushJsonFeeder::new();
+    let r = parse_with_parser(json, &mut JsonParser::new_with_options(feeder, options));
+
+    assert_eq!(
+        r#"1.02"3"{
+  "a": 4
+}50.00006[
+  "b"
+][
+  "c"
+]7{
+  "d": "e"
+}true8falsenull"#,
+        r
+    );
 }

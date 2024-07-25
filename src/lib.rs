@@ -155,6 +155,7 @@
 //! directly.
 pub mod event;
 pub mod feeder;
+pub mod options;
 pub mod parser;
 
 #[cfg(feature = "tokio")]

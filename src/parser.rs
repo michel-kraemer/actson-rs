@@ -4,7 +4,7 @@ use std::{
     str::{from_utf8, Utf8Error},
 };
 
-use crate::{feeder::JsonFeeder, JsonEvent};
+use crate::{feeder::JsonFeeder, options::JsonParserOptions, JsonEvent};
 use btoi::ParseIntegerError;
 use num_traits::{CheckedAdd, CheckedMul, CheckedSub, FromPrimitive, Zero};
 use thiserror::Error;
@@ -103,6 +103,7 @@ const F4: i8 = 27; // false
 const N1: i8 = 28; // nu
 const N2: i8 = 29; // nul
 const N3: i8 = 30; // null
+const RC: i8 = 99; // recover if in streaming mode, error otherwise
 
 /// The state transition table takes the current state and the current symbol,
 /// and returns either a new state or an action. An action is represented as a
@@ -113,7 +114,7 @@ const STATE_TRANSITION_TABLE: [i8; 992] = [
 /*               white                                      1-9                                   ABCDF  etc
              space |  {  }  [  ]  :  ,  "  \  /  +  -  .  0  |  a  b  c  d  e  f  l  n  r  s  t  u  |  E  | pad */
 /*start  GO*/  GO,GO,-6,__,-5,__,__,__,ST,__,__,__,MI,__,ZE,IN,__,__,__,__,__,F1,__,N1,__,__,T1,__,__,__,__,__,
-/*ok     OK*/  OK,OK,__,-8,__,-7,__,-3,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
+/*ok     OK*/  OK,OK,RC,-8,RC,-7,__,-3,RC,__,__,__,RC,__,RC,RC,__,__,__,__,__,RC,__,RC,__,__,RC,__,__,__,__,__,
 /*object OB*/  OB,OB,__,-9,__,__,__,__,ST,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
 /*key    KE*/  KE,KE,__,__,__,__,__,__,ST,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
 /*colon  CO*/  CO,CO,__,__,__,__,-2,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
@@ -126,13 +127,13 @@ const STATE_TRANSITION_TABLE: [i8; 992] = [
 /*u3     U3*/  __,__,__,__,__,__,__,__,__,__,__,__,__,__,U4,U4,U4,U4,U4,U4,U4,U4,__,__,__,__,__,__,U4,U4,__,__,
 /*u4     U4*/  __,__,__,__,__,__,__,__,__,__,__,__,__,__,ST,ST,ST,ST,ST,ST,ST,ST,__,__,__,__,__,__,ST,ST,__,__,
 /*minus  MI*/  __,__,__,__,__,__,__,__,__,__,__,__,__,__,ZE,IN,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
-/*zero   ZE*/  OK,OK,__,-8,__,-7,__,-3,__,__,__,__,__,F0,__,__,__,__,__,__,E1,__,__,__,__,__,__,__,__,E1,__,__,
-/*int    IN*/  OK,OK,__,-8,__,-7,__,-3,__,__,__,__,__,F0,IN,IN,__,__,__,__,E1,__,__,__,__,__,__,__,__,E1,__,__,
+/*zero   ZE*/  OK,OK,RC,-8,RC,-7,__,-3,RC,__,__,__,__,F0,__,__,__,__,__,__,E1,RC,__,RC,__,__,RC,__,__,E1,__,__,
+/*int    IN*/  OK,OK,RC,-8,RC,-7,__,-3,RC,__,__,__,__,F0,IN,IN,__,__,__,__,E1,RC,__,RC,__,__,RC,__,__,E1,__,__,
 /*frac0  F0*/  __,__,__,__,__,__,__,__,__,__,__,__,__,__,FR,FR,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
-/*frac   FR*/  OK,OK,__,-8,__,-7,__,-3,__,__,__,__,__,__,FR,FR,__,__,__,__,E1,__,__,__,__,__,__,__,__,E1,__,__,
+/*frac   FR*/  OK,OK,RC,-8,RC,-7,__,-3,RC,__,__,__,__,__,FR,FR,__,__,__,__,E1,RC,__,RC,__,__,RC,__,__,E1,__,__,
 /*e      E1*/  __,__,__,__,__,__,__,__,__,__,__,E2,E2,__,E3,E3,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
 /*ex     E2*/  __,__,__,__,__,__,__,__,__,__,__,__,__,__,E3,E3,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
-/*exp    E3*/  OK,OK,__,-8,__,-7,__,-3,__,__,__,__,__,__,E3,E3,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,
+/*exp    E3*/  OK,OK,RC,-8,RC,-7,__,-3,RC,__,__,__,__,__,E3,E3,__,__,__,__,__,RC,__,RC,__,__,RC,__,__,__,__,__,
 /*tr     T1*/  __,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,T2,__,__,__,__,__,__,__,
 /*tru    T2*/  __,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,T3,__,__,__,__,
 /*true   T3*/  __,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,__,OK,__,__,__,__,__,__,__,__,__,__,__,
@@ -201,6 +202,10 @@ pub struct JsonParser<T> {
     /// The maximum number of modes on the stack
     depth: usize,
 
+    /// `true` if streaming mode is enabled, which means that the parser can
+    /// handle a stream of multiple JSON values
+    streaming: bool,
+
     /// The current state
     state: i8,
 
@@ -216,6 +221,10 @@ pub struct JsonParser<T> {
 
     /// Tracks the number of bytes that have been processed
     parsed_bytes: usize,
+
+    /// A character that has been put back to be parsed at the next call
+    /// of [`Self::next_event()`]
+    putback_character: Option<u8>,
 }
 
 impl<T> JsonParser<T>
@@ -228,26 +237,48 @@ where
             feeder,
             stack: VecDeque::from([MODE_DONE]),
             depth: 2048,
+            streaming: false,
             state: GO,
             current_buffer: vec![],
             event1: JsonEvent::NeedMoreInput,
             event2: JsonEvent::NeedMoreInput,
             parsed_bytes: 0,
+            putback_character: None,
         }
     }
 
     /// Create a new JSON parser using the given [`JsonFeeder`] and with a
     /// defined maximum stack depth
+    #[deprecated(since = "1.1.0", note = "use `new_with_options` instead")]
     pub fn new_with_max_depth(feeder: T, max_depth: usize) -> Self {
         JsonParser {
             feeder,
             stack: VecDeque::from([MODE_DONE]),
             depth: max_depth,
+            streaming: false,
             state: GO,
             current_buffer: vec![],
             event1: JsonEvent::NeedMoreInput,
             event2: JsonEvent::NeedMoreInput,
             parsed_bytes: 0,
+            putback_character: None,
+        }
+    }
+
+    /// Create a new JSON parser using the given [`JsonFeeder`] and
+    /// [`JsonParserOptions`]
+    pub fn new_with_options(feeder: T, options: JsonParserOptions) -> Self {
+        JsonParser {
+            feeder,
+            stack: VecDeque::from([MODE_DONE]),
+            depth: options.max_depth,
+            streaming: options.streaming,
+            state: GO,
+            current_buffer: vec![],
+            event1: JsonEvent::NeedMoreInput,
+            event2: JsonEvent::NeedMoreInput,
+            parsed_bytes: 0,
+            putback_character: None,
         }
     }
 
@@ -271,13 +302,32 @@ where
         true
     }
 
+    /// Get the next input character either from [`Self::putback_character`] or
+    /// from [`Self::feeder`]
+    fn get_next_input(&mut self) -> Option<u8> {
+        self.putback_character
+            .take()
+            .or_else(|| self.feeder.next_input())
+    }
+
+    /// Put back the given character to be parsed at the next call of
+    /// [`Self::next_event()`]
+    fn put_back(&mut self, c: u8) {
+        assert!(
+            self.putback_character.is_none(),
+            "Only one character can be put back"
+        );
+        self.putback_character = Some(c);
+        self.parsed_bytes -= 1;
+    }
+
     /// Call this method to proceed parsing the JSON text and to get the next
     /// event. The method returns [`Some(JsonEvent::NeedMoreInput)`](JsonEvent::NeedMoreInput)
     /// if it needs more input data from the feeder or `None` if the end of the
     /// JSON text has been reached.
     pub fn next_event(&mut self) -> Result<Option<JsonEvent>, ParserError> {
         while self.event1 == JsonEvent::NeedMoreInput {
-            if let Some(b) = self.feeder.next_input() {
+            if let Some(b) = self.get_next_input() {
                 self.parsed_bytes += 1;
                 if self.state == ST && (32..=127).contains(&b) && b != b'\\' && b != b'"' {
                     // shortcut
@@ -327,7 +377,31 @@ where
         }
 
         // Get the next state from the state transition table.
-        let next_state = STATE_TRANSITION_TABLE[((self.state as usize) << 5) + next_class as usize];
+        let mut next_state =
+            STATE_TRANSITION_TABLE[((self.state as usize) << 5) + next_class as usize];
+
+        // Try to recover if in streaming mode.
+        if next_state == RC {
+            if self.streaming && self.stack.len() == 1 && *self.stack.back().unwrap() == MODE_DONE {
+                // Streaming is enabled and we're in a state where we can handle
+                // another JSON value.
+                if self.state == OK {
+                    // The previous value has been converted to an event. Try
+                    // again to get the next state but start from the GO state.
+                    next_state = STATE_TRANSITION_TABLE[((GO as usize) << 5) + next_class as usize];
+                } else {
+                    // Switch to the OK state to convert the current value into
+                    // an event. Put back the character so it will be parsed again.
+                    next_state = OK;
+                    self.put_back(next_char);
+                }
+            } else {
+                // Streaming is not enabled or we're not on the top level. This
+                // is a syntax error.
+                next_state = __;
+            }
+        }
+
         if next_state >= 0 {
             if (ST..=E3).contains(&next_state) {
                 // According to 'STATE_TRANSITION_TABLE', we don't need to check
