@@ -78,11 +78,14 @@ impl JsonParserOptionsBuilder {
     /// ## Example:
     ///
     /// ```rust
-    /// use actson::feeder::PushJsonFeeder;
+    /// use actson::feeder::SliceJsonFeeder;
     /// use actson::options::JsonParserOptionsBuilder;
     /// use actson::{JsonEvent, JsonParser};
     ///
-    /// let feeder = PushJsonFeeder::new();
+    /// let json = r#"1 2""{"key":"value"}
+    /// ["a","b"]4true"#.as_bytes();
+    ///
+    /// let feeder = SliceJsonFeeder::new(json);
     /// let mut parser = JsonParser::new_with_options(
     ///     feeder,
     ///     JsonParserOptionsBuilder::default()
@@ -90,20 +93,9 @@ impl JsonParserOptionsBuilder {
     ///         .build(),
     /// );
     ///
-    /// let json = r#"1 2""{"key":"value"}
-    /// ["a","b"]4true"#.as_bytes();
-    ///
-    /// let mut i: usize = 0;
     /// let mut events = Vec::new();
     /// while let Some(e) = parser.next_event().unwrap() {
-    ///     if e == JsonEvent::NeedMoreInput {
-    ///         i += parser.feeder.push_bytes(&json[i..]);
-    ///         if i == json.len() {
-    ///             parser.feeder.done();
-    ///         }
-    ///     } else {
-    ///         events.push(e);
-    ///     }
+    ///     events.push(e);
     /// }
     ///
     /// assert_eq!(events, vec![
