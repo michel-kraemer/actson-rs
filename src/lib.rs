@@ -153,6 +153,62 @@
 //! reactive features of Actson and your data seems to completely fit into
 //! memory. In this case, you're most likely better off using Serde JSON
 //! directly.
+//!
+//! ### Parsing in streaming mode (multiple top-level JSON values)
+//!
+//! If you want to parse a stream of multiple top-level JSON values, you can enable
+//! streaming mode. Values must be clearly separable. They must either be
+//! self-delineating values (i.e. arrays, objects, strings) or keywords (i.e.
+//! `true`, `false`, `null`), or they must be separated either by white space, at
+//! least one self-delineating value, or at least one keyword.
+//!
+//! #### Example streams
+//!
+//! `1 2 3 true 4 5`
+//!
+//! `[1,2,3][4,5,6]{"key": "value"} 7 8 9`
+//!
+//! `"a""b"[1, 2, 3] {"key": "value"}`
+//!
+//! #### Example
+//!
+//! ```
+//! use actson::feeder::SliceJsonFeeder;
+//! use actson::options::JsonParserOptionsBuilder;
+//! use actson::{JsonEvent, JsonParser};
+//!
+//! let json = r#"1 2""{"key":"value"}
+//! ["a","b"]4true"#.as_bytes();
+//!
+//! let feeder = SliceJsonFeeder::new(json);
+//! let mut parser = JsonParser::new_with_options(
+//!     feeder,
+//!     JsonParserOptionsBuilder::default()
+//!         .with_streaming(true)
+//!         .build(),
+//! );
+//!
+//! let mut events = Vec::new();
+//! while let Some(e) = parser.next_event().unwrap() {
+//!     events.push(e);
+//! }
+//!
+//! assert_eq!(events, vec![
+//!     JsonEvent::ValueInt,
+//!     JsonEvent::ValueInt,
+//!     JsonEvent::ValueString,
+//!     JsonEvent::StartObject,
+//!     JsonEvent::FieldName,
+//!     JsonEvent::ValueString,
+//!     JsonEvent::EndObject,
+//!     JsonEvent::StartArray,
+//!     JsonEvent::ValueString,
+//!     JsonEvent::ValueString,
+//!     JsonEvent::EndArray,
+//!     JsonEvent::ValueInt,
+//!     JsonEvent::ValueTrue,
+//! ]);
+//! ```
 pub mod event;
 pub mod feeder;
 pub mod options;
