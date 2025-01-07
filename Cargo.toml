@@ -21,14 +21,14 @@ serde_json = ["dep:serde_json"]
 [dependencies]
 btoi = "0.4.3"
 num-traits = "0.2.19"
-serde_json = { version = "1.0.120", features = ["float_roundtrip"], optional = true }
+serde_json = { version = "1.0.135", features = ["float_roundtrip"], optional = true }
 thiserror = "1.0.63"
 tokio = { version = "1.39.1", features = ["io-util", "rt-multi-thread"], optional = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
 dtoa = "1.0.9"
-serde_json = { version = "1.0.120", features = ["float_roundtrip"] }
+serde_json = { version = "1.0.135", features = ["float_roundtrip"] }
 tokio = { version = "1.39.1", features = ["fs", "macros", "rt-multi-thread"]}
 
 [[bench]]
