@@ -112,6 +112,47 @@ fn test_pass() {
 }
 
 #[test]
+fn test_escape_in_key() {
+    let json = r#"{"foo\u0000bar": 42}"#;
+    assert_json_eq(json, &parse(json));
+}
+
+#[test]
+fn test_key() {
+    let json = r#"["\uD801\udc37"]"#;
+    assert_json_eq(json, &parse(json));
+}
+
+#[test]
+fn test_utf8() {
+    let u3: u8 = 48;
+    let u4: u8 = 49;
+    let u5: u8 = 50;
+    let u6: u8 = 51;
+
+    let u8array = [u3, u4, u5, u6];
+
+    let unicode_in_utf8 = std::str::from_utf8(&u8array)
+        .map_err(|_| ParserError::SyntaxError)
+        .unwrap();
+
+    // convert the utf8 encoded unicode code point to a u32
+    let unicode = u32::from_str_radix(unicode_in_utf8, 16)
+        .map_err(|_| ParserError::SyntaxError)
+        .unwrap();
+
+    // convert the u32 to a char
+    let unicode_char = char::from_u32(unicode)
+        .ok_or(ParserError::SyntaxError)
+        .unwrap();
+
+    // convert the char to a String
+    let unicode_as_utf8 = unicode_char.to_string();
+
+    assert_eq!(unicode_as_utf8, "\u{0123}");
+}
+
+#[test]
 fn test_fail() {
     let feeder = PushJsonFeeder::new();
     let mut parser = JsonParser::new_with_options(
@@ -186,6 +227,20 @@ fn illegal_character() {
         parse_fail(json.as_bytes()),
         ParserError::IllegalInput(0x02)
     ));
+}
+
+#[test]
+fn escaped_json_string_is_escaped() {
+    let json = r#""{\"test\": \n\"value\"}""#;
+    let mut json_parser = JsonParser::new(PushJsonFeeder::new());
+    json_parser.feeder.push_bytes(json.as_bytes());
+    let event = json_parser.next_event().unwrap();
+    assert_eq!(event, Some(JsonEvent::ValueString));
+    assert_eq!(
+        json_parser.current_str().unwrap(),
+        r#"{"test": 
+"value"}"#
+    );
 }
 
 #[test]
@@ -339,6 +394,12 @@ fn test_suite_pass() {
             }
         }
     }
+}
+
+#[test]
+fn test_string_1_2_3_bytes() {
+    let json = r#"["\u0060\u012a\u12AB"]"#;
+    assert_json_eq(json, &parse(json));
 }
 
 /// Test if the parser actually fails to process each invalid file from the test suite

@@ -93,9 +93,15 @@ impl PrettyPrinter {
             }
         }
 
-        self.result.push('"');
-        self.result.push_str(name);
-        self.result.push_str("\": ");
+        let str: String = match serde_json::to_string(name) {
+            Ok(s) => s,
+            Err(e) => {
+                println!("Error invalid json string: {:?}", name);
+                panic!("Error: {:?}", e);
+            }
+        };
+        self.result.push_str(&str);
+        self.result.push_str(": ");
 
         if let Some(last) = self.element_counts.pop() {
             self.element_counts.push(last + 1);
@@ -115,9 +121,14 @@ impl PrettyPrinter {
 
     fn on_value_string(&mut self, value: &str) {
         self.on_value();
-        self.result.push('"');
-        self.result.push_str(value);
-        self.result.push('"');
+        let str: String = match serde_json::to_string(value) {
+            Ok(s) => s,
+            Err(e) => {
+                println!("Error invalid json string: {:?}", value);
+                panic!("Error: {:?}", e);
+            }
+        };
+        self.result.push_str(&str);
     }
 
     fn on_value_int<I>(&mut self, value: I)
