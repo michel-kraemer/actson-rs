@@ -118,38 +118,9 @@ fn test_escape_in_key() {
 }
 
 #[test]
-fn test_key() {
+fn test_utf16_in_array() {
     let json = r#"["\uD801\udc37"]"#;
     assert_json_eq(json, &parse(json));
-}
-
-#[test]
-fn test_utf8() {
-    let u3: u8 = 48;
-    let u4: u8 = 49;
-    let u5: u8 = 50;
-    let u6: u8 = 51;
-
-    let u8array = [u3, u4, u5, u6];
-
-    let unicode_in_utf8 = std::str::from_utf8(&u8array)
-        .map_err(|_| ParserError::SyntaxError)
-        .unwrap();
-
-    // convert the utf8 encoded unicode code point to a u32
-    let unicode = u32::from_str_radix(unicode_in_utf8, 16)
-        .map_err(|_| ParserError::SyntaxError)
-        .unwrap();
-
-    // convert the u32 to a char
-    let unicode_char = char::from_u32(unicode)
-        .ok_or(ParserError::SyntaxError)
-        .unwrap();
-
-    // convert the char to a String
-    let unicode_as_utf8 = unicode_char.to_string();
-
-    assert_eq!(unicode_as_utf8, "\u{0123}");
 }
 
 #[test]

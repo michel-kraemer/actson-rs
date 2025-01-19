@@ -226,8 +226,8 @@ pub struct JsonParser<T> {
     /// of [`Self::next_event()`]
     putback_character: Option<u8>,
 
-    /// Tracks if a high surrogate pair has been set
-    high_surrogate_pair_set: bool,
+    /// Tracks if a UTF-16 high surrogate has been encountered
+    high_surrogate_pair: bool,
 }
 
 impl<T> JsonParser<T>
@@ -247,7 +247,7 @@ where
             event2: JsonEvent::NeedMoreInput,
             parsed_bytes: 0,
             putback_character: None,
-            high_surrogate_pair_set: false,
+            high_surrogate_pair: false,
         }
     }
 
@@ -266,7 +266,7 @@ where
             event2: JsonEvent::NeedMoreInput,
             parsed_bytes: 0,
             putback_character: None,
-            high_surrogate_pair_set: false,
+            high_surrogate_pair: false,
         }
     }
 
@@ -284,7 +284,7 @@ where
             event2: JsonEvent::NeedMoreInput,
             parsed_bytes: 0,
             putback_character: None,
-            high_surrogate_pair_set: false,
+            high_surrogate_pair: false,
         }
     }
 
@@ -419,42 +419,42 @@ where
                         match next_char {
                             b'\\' => {
                                 self.current_buffer.pop();
-                                self.current_buffer.extend_from_slice("\u{005C}".as_bytes());
+                                self.current_buffer.push(0x5C);
                                 next_state = ST;
                             }
                             b'n' => {
                                 self.current_buffer.pop();
-                                self.current_buffer.extend_from_slice("\u{000A}".as_bytes());
+                                self.current_buffer.push(0x0A);
                                 next_state = ST;
                             }
                             b'r' => {
                                 self.current_buffer.pop();
-                                self.current_buffer.extend_from_slice("\u{000D}".as_bytes());
+                                self.current_buffer.push(0x0D);
                                 next_state = ST;
                             }
                             b't' => {
                                 self.current_buffer.pop();
-                                self.current_buffer.extend_from_slice("\u{0009}".as_bytes());
+                                self.current_buffer.push(0x09);
                                 next_state = ST;
                             }
                             b'b' => {
                                 self.current_buffer.pop();
-                                self.current_buffer.extend_from_slice("\u{0008}".as_bytes());
+                                self.current_buffer.push(0x08);
                                 next_state = ST;
                             }
                             b'f' => {
                                 self.current_buffer.pop();
-                                self.current_buffer.extend_from_slice("\u{000C}".as_bytes());
+                                self.current_buffer.push(0x0C);
                                 next_state = ST;
                             }
                             b'/' => {
                                 self.current_buffer.pop();
-                                self.current_buffer.extend_from_slice("\u{002F}".as_bytes());
+                                self.current_buffer.push(0x2F);
                                 next_state = ST;
                             }
                             b'"' => {
                                 self.current_buffer.pop();
-                                self.current_buffer.extend_from_slice("\u{0022}".as_bytes());
+                                self.current_buffer.push(0x22);
                                 next_state = ST;
                             }
                             _ => {
@@ -467,7 +467,7 @@ where
                         // last 6 bytes in the buffer will now be the escaped unicode in the form
                         // \uXXXX
 
-                        // this is a utf8 encoded version of the unicode code point
+                        // this is a UTF-8 encoded version of the unicode code point
                         if self.current_buffer.len() < 6 {
                             return Err(ParserError::SyntaxError);
                         }
@@ -476,26 +476,26 @@ where
                             from_utf8(&self.current_buffer[self.current_buffer.len() - 4..])
                                 .map_err(|_| ParserError::SyntaxError)?;
 
-                        // convert the utf8 encoded unicode code point to a u32
+                        // convert the UTF-8 encoded unicode code point to a u32
                         let unicode = u32::from_str_radix(unicode_in_utf8, 16)
                             .map_err(|_| ParserError::SyntaxError)?;
 
-                        // utf16 high pair
+                        // UTF-16 high pair
                         if (0xD800..=0xDBFF).contains(&unicode) {
-                            if self.high_surrogate_pair_set {
+                            if self.high_surrogate_pair {
                                 return Err(ParserError::SyntaxError);
                             }
 
-                            self.high_surrogate_pair_set = true;
+                            self.high_surrogate_pair = true;
                         }
-                        // utf16 low pair
+                        // UTF-16 low pair
                         else if (0xDC00..=0xDFFF).contains(&unicode) {
-                            if !self.high_surrogate_pair_set {
+                            if !self.high_surrogate_pair {
                                 return Err(ParserError::SyntaxError);
                             }
 
-                            self.high_surrogate_pair_set = false;
-                            // UTF16 surrogate pair detected
+                            self.high_surrogate_pair = false;
+                            // UTF-16 surrogate pair detected
                             // combine the high and low surrogate pairs to get the unicode character
                             // this will be the last 12 characters in the buffer
                             // \uXXXX\uXXXX
@@ -534,8 +534,7 @@ where
                             // remove last 12 bytes and insert new
                             self.current_buffer.truncate(self.current_buffer.len() - 12);
                             self.current_buffer.extend_from_slice(char.as_bytes());
-                        }
-                        else {
+                        } else {
                             // convert the u32 to a char
                             let unicode_char =
                                 char::from_u32(unicode).ok_or(ParserError::SyntaxError)?;
@@ -547,7 +546,7 @@ where
                             // remove the last 6 bytes from the buffer
                             self.current_buffer.truncate(self.current_buffer.len() - 6);
 
-                            // add the utf8 encoded unicode code point to the buffer
+                            // add the UTF-8 encoded unicode code point to the buffer
                             self.current_buffer
                                 .extend_from_slice(unicode_as_string.as_bytes());
                         }
