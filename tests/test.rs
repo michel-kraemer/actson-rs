@@ -215,6 +215,16 @@ fn escaped_json_string_is_escaped() {
 }
 
 #[test]
+fn all_escape_characters() {
+    let json = r#""\"\\\/\b\f\n\r\t""#;
+    let mut json_parser = JsonParser::new(PushJsonFeeder::new());
+    json_parser.feeder.push_bytes(json.as_bytes());
+    let event = json_parser.next_event().unwrap();
+    assert_eq!(event, Some(JsonEvent::ValueString));
+    assert_eq!(json_parser.current_str().unwrap(), "\"\\/\u{8}\u{c}\n\r\t");
+}
+
+#[test]
 fn syntax_error() {
     let json = "{key}";
     assert!(matches!(
