@@ -416,140 +416,19 @@ where
                 // if state >= ST && state <= E3 {
                 if self.state >= ST {
                     if self.state == ES {
-                        match next_char {
-                            b'\\' => {
-                                self.current_buffer.pop();
-                                self.current_buffer.push(0x5C);
-                                next_state = ST;
-                            }
-                            b'n' => {
-                                self.current_buffer.pop();
-                                self.current_buffer.push(0x0A);
-                                next_state = ST;
-                            }
-                            b'r' => {
-                                self.current_buffer.pop();
-                                self.current_buffer.push(0x0D);
-                                next_state = ST;
-                            }
-                            b't' => {
-                                self.current_buffer.pop();
-                                self.current_buffer.push(0x09);
-                                next_state = ST;
-                            }
-                            b'b' => {
-                                self.current_buffer.pop();
-                                self.current_buffer.push(0x08);
-                                next_state = ST;
-                            }
-                            b'f' => {
-                                self.current_buffer.pop();
-                                self.current_buffer.push(0x0C);
-                                next_state = ST;
-                            }
-                            b'/' => {
-                                self.current_buffer.pop();
-                                self.current_buffer.push(0x2F);
-                                next_state = ST;
-                            }
-                            b'"' => {
-                                self.current_buffer.pop();
-                                self.current_buffer.push(0x22);
-                                next_state = ST;
-                            }
-                            _ => {
-                                self.current_buffer.push(next_char);
-                            }
+                        if let Some(d) = Self::decode_escape_character(next_char) {
+                            self.current_buffer.pop();
+                            self.current_buffer.push(d);
+                            next_state = ST;
+                        } else {
+                            self.current_buffer.push(next_char);
                         }
                     } else if self.state == U4 {
                         self.current_buffer.push(next_char);
 
-                        // last 6 bytes in the buffer will now be the escaped unicode in the form
-                        // \uXXXX
-
-                        // this is a UTF-8 encoded version of the unicode code point
-                        if self.current_buffer.len() < 6 {
-                            return Err(ParserError::SyntaxError);
-                        }
-
-                        let unicode_in_utf8 =
-                            from_utf8(&self.current_buffer[self.current_buffer.len() - 4..])
-                                .map_err(|_| ParserError::SyntaxError)?;
-
-                        // convert the UTF-8 encoded unicode code point to a u32
-                        let unicode = u32::from_str_radix(unicode_in_utf8, 16)
-                            .map_err(|_| ParserError::SyntaxError)?;
-
-                        // UTF-16 high pair
-                        if (0xD800..=0xDBFF).contains(&unicode) {
-                            if self.high_surrogate_pair {
-                                return Err(ParserError::SyntaxError);
-                            }
-
-                            self.high_surrogate_pair = true;
-                        }
-                        // UTF-16 low pair
-                        else if (0xDC00..=0xDFFF).contains(&unicode) {
-                            if !self.high_surrogate_pair {
-                                return Err(ParserError::SyntaxError);
-                            }
-
-                            self.high_surrogate_pair = false;
-                            // UTF-16 surrogate pair detected
-                            // combine the high and low surrogate pairs to get the unicode character
-                            // this will be the last 12 characters in the buffer
-                            // \uXXXX\uXXXX
-                            //   |  |  |  |
-                            //   high  low
-
-                            if self.current_buffer.len() < 12 {
-                                return Err(ParserError::SyntaxError);
-                            }
-
-                            // create the high code point
-                            let high_code_point = u16::from_str_radix(
-                                from_utf8(
-                                    &self.current_buffer[self.current_buffer.len() - 10
-                                        ..self.current_buffer.len() - 6],
-                                )
-                                .map_err(|_| ParserError::SyntaxError)?,
-                                16,
-                            )
-                            .map_err(|_| ParserError::SyntaxError)?;
-
-                            // create the low code point
-                            let low_code_point = u16::from_str_radix(
-                                from_utf8(&self.current_buffer[self.current_buffer.len() - 4..])
-                                    .map_err(|_| ParserError::SyntaxError)?,
-                                16,
-                            )
-                            .map_err(|_| ParserError::SyntaxError)?;
-
-                            let char = char::decode_utf16(
-                                [high_code_point, low_code_point].iter().cloned(),
-                            )
-                            .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
-                            .collect::<String>();
-
-                            // remove last 12 bytes and insert new
-                            self.current_buffer.truncate(self.current_buffer.len() - 12);
-                            self.current_buffer.extend_from_slice(char.as_bytes());
-                        } else {
-                            // convert the u32 to a char
-                            let unicode_char =
-                                char::from_u32(unicode).ok_or(ParserError::SyntaxError)?;
-
-                            // regular case
-                            // convert the char to a String and get the u8 bytes
-                            let unicode_as_string = unicode_char.to_string();
-
-                            // remove the last 6 bytes from the buffer
-                            self.current_buffer.truncate(self.current_buffer.len() - 6);
-
-                            // add the UTF-8 encoded unicode code point to the buffer
-                            self.current_buffer
-                                .extend_from_slice(unicode_as_string.as_bytes());
-                        }
+                        // the last 6 bytes in the buffer will now be an
+                        // escaped unicode character in the form \uXXXX
+                        self.decode_utf_escape()?;
                     } else {
                         self.current_buffer.push(next_char);
                     }
@@ -569,6 +448,106 @@ where
         } else {
             // Or perform one of the actions.
             self.perform_action(next_state)?;
+        }
+
+        Ok(())
+    }
+
+    /// Decodes an escape character
+    fn decode_escape_character(next_char: u8) -> Option<u8> {
+        match next_char {
+            b'\\' => Some(0x5C),
+            b'n' => Some(0x0A),
+            b'r' => Some(0x0D),
+            b't' => Some(0x09),
+            b'b' => Some(0x08),
+            b'f' => Some(0x0C),
+            b'/' => Some(0x2F),
+            b'"' => Some(0x22),
+            _ => None,
+        }
+    }
+
+    /// Decodes a UTF escape sequence (e.g. `\uXXXX`, or a surrogate pair
+    /// `\uXXXX\uXXXX`) to a character. Directly modifies the buffer.
+    fn decode_utf_escape(&mut self) -> Result<(), ParserError> {
+        // there have to be at least 6 bytes in the buffer
+        if self.current_buffer.len() < 6 {
+            return Err(ParserError::SyntaxError);
+        }
+
+        let unicode_in_utf8 = from_utf8(&self.current_buffer[self.current_buffer.len() - 4..])
+            .map_err(|_| ParserError::SyntaxError)?;
+
+        // convert the UTF-8 encoded unicode code point to a u32
+        let unicode =
+            u32::from_str_radix(unicode_in_utf8, 16).map_err(|_| ParserError::SyntaxError)?;
+
+        if (0xD800..=0xDBFF).contains(&unicode) {
+            // UTF-16 high pair
+            if self.high_surrogate_pair {
+                return Err(ParserError::SyntaxError);
+            }
+            self.high_surrogate_pair = true;
+        } else if (0xDC00..=0xDFFF).contains(&unicode) {
+            // UTF-16 low pair
+            if !self.high_surrogate_pair {
+                return Err(ParserError::SyntaxError);
+            }
+            self.high_surrogate_pair = false;
+
+            // UTF-16 surrogate pair detected; combine the high and low
+            // surrogates to get the unicode character. This will be the last
+            // 12 characters in the buffer
+            //
+            // \uXXXX\uXXXX
+            //   |  |  |  |
+            //   high  low
+
+            if self.current_buffer.len() < 12 {
+                return Err(ParserError::SyntaxError);
+            }
+
+            // create the high code point
+            let high_code_point = u16::from_str_radix(
+                from_utf8(
+                    &self.current_buffer
+                        [self.current_buffer.len() - 10..self.current_buffer.len() - 6],
+                )
+                .map_err(|_| ParserError::SyntaxError)?,
+                16,
+            )
+            .map_err(|_| ParserError::SyntaxError)?;
+
+            // create the low code point
+            let low_code_point = u16::from_str_radix(
+                from_utf8(&self.current_buffer[self.current_buffer.len() - 4..])
+                    .map_err(|_| ParserError::SyntaxError)?,
+                16,
+            )
+            .map_err(|_| ParserError::SyntaxError)?;
+
+            let char = char::decode_utf16([high_code_point, low_code_point].iter().cloned())
+                .map(|r| r.unwrap_or(char::REPLACEMENT_CHARACTER))
+                .collect::<String>();
+
+            // remove last 12 bytes and insert new
+            self.current_buffer.truncate(self.current_buffer.len() - 12);
+            self.current_buffer.extend_from_slice(char.as_bytes());
+        } else {
+            // convert the u32 to a char
+            let unicode_char = char::from_u32(unicode).ok_or(ParserError::SyntaxError)?;
+
+            // regular case
+            // convert the char to a String and get the u8 bytes
+            let unicode_as_string = unicode_char.to_string();
+
+            // remove the last 6 bytes from the buffer
+            self.current_buffer.truncate(self.current_buffer.len() - 6);
+
+            // add the UTF-8 encoded unicode code point to the buffer
+            self.current_buffer
+                .extend_from_slice(unicode_as_string.as_bytes());
         }
 
         Ok(())
