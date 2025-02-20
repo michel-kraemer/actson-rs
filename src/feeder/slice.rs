@@ -13,7 +13,7 @@ impl<'a> SliceJsonFeeder<'a> {
     }
 }
 
-impl<'a> JsonFeeder for SliceJsonFeeder<'a> {
+impl JsonFeeder for SliceJsonFeeder<'_> {
     fn has_input(&self) -> bool {
         self.pos < self.slice.len()
     }
