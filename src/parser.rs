@@ -197,7 +197,7 @@ pub struct JsonParser<T> {
     pub feeder: T,
 
     /// The stack containing the current modes
-    stack: VecDeque<i8>,
+    stack: Vec<i8>,
 
     /// The maximum number of modes on the stack
     depth: usize,
@@ -238,7 +238,7 @@ where
     pub fn new(feeder: T) -> Self {
         JsonParser {
             feeder,
-            stack: VecDeque::from([MODE_DONE]),
+            stack: Vec::from([MODE_DONE]),
             depth: 2048,
             streaming: false,
             state: GO,
@@ -257,7 +257,7 @@ where
     pub fn new_with_max_depth(feeder: T, max_depth: usize) -> Self {
         JsonParser {
             feeder,
-            stack: VecDeque::from([MODE_DONE]),
+            stack: Vec::from([MODE_DONE]),
             depth: max_depth,
             streaming: false,
             state: GO,
@@ -275,7 +275,7 @@ where
     pub fn new_with_options(feeder: T, options: JsonParserOptions) -> Self {
         JsonParser {
             feeder,
-            stack: VecDeque::from([MODE_DONE]),
+            stack: Vec::from([MODE_DONE]),
             depth: options.max_depth,
             streaming: options.streaming,
             state: GO,
@@ -294,17 +294,17 @@ where
         if self.stack.len() >= self.depth {
             return false;
         }
-        self.stack.push_back(mode);
+        self.stack.push(mode);
         true
     }
 
     /// Pop the stack, assuring that the current mode matches the expectation.
     /// Return `false` if there is underflow or if the modes mismatch.
     fn pop(&mut self, mode: i8) -> bool {
-        if self.stack.is_empty() || *self.stack.back().unwrap() != mode {
+        if self.stack.is_empty() || *self.stack.last().unwrap() != mode {
             return false;
         }
-        self.stack.pop_back();
+        self.stack.pop();
         true
     }
 
@@ -388,7 +388,7 @@ where
 
         // Try to recover if in streaming mode.
         if next_state == RC {
-            if self.streaming && self.stack.len() == 1 && *self.stack.back().unwrap() == MODE_DONE {
+            if self.streaming && self.stack.len() == 1 && *self.stack.last().unwrap() == MODE_DONE {
                 // Streaming is enabled and we're in a state where we can handle
                 // another JSON value.
                 if self.state == OK {
@@ -615,7 +615,7 @@ where
 
             // "
             -4 => {
-                if *self.stack.back().unwrap() == MODE_KEY {
+                if *self.stack.last().unwrap() == MODE_KEY {
                     self.state = CO;
                     self.event1 = JsonEvent::FieldName;
                 } else {
@@ -626,7 +626,7 @@ where
 
             // ,
             -3 => {
-                match *self.stack.back().unwrap() {
+                match *self.stack.last().unwrap() {
                     MODE_OBJECT => {
                         // A comma causes a flip from object mode to key mode.
                         if !self.pop(MODE_OBJECT) || !self.push(MODE_KEY) {
