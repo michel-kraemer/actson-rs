@@ -1,5 +1,4 @@
 use std::{
-    collections::VecDeque,
     num::ParseFloatError,
     str::{from_utf8, Utf8Error},
 };
