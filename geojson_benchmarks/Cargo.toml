@@ -9,4 +9,4 @@ actson = { path = "..", features = ["tokio"] }
 tokio = { version = "1.36.0", features = ["fs", "macros", "rt-multi-thread", "sync"] }
 anyhow = "1.0.80"
 serde = { version = "1.0.197", features = ["derive"] }
-clap = { version = "4.5.2", features = ["derive", "wrap_help"] }
+clap = { version = "4.5.31", features = ["derive", "wrap_help"] }
