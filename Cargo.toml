@@ -27,7 +27,7 @@ tokio = { version = "1.43.0", features = ["io-util", "rt-multi-thread"], optiona
 
 [dev-dependencies]
 criterion = "0.5.1"
-dtoa = "1.0.9"
+dtoa = "1.0.10"
 serde_json = { version = "1.0.136", features = ["float_roundtrip"] }
 tokio = { version = "1.43.0", features = ["fs", "macros", "rt-multi-thread"]}
 
