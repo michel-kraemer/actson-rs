@@ -26,7 +26,7 @@ thiserror = "2.0.12"
 tokio = { version = "1.44.2", features = ["io-util", "rt-multi-thread"], optional = true }
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.6.0"
 dtoa = "1.0.10"
 serde_json = { version = "1.0.140", features = ["float_roundtrip"] }
 tokio = { version = "1.44.2", features = ["fs", "macros", "rt-multi-thread"]}
