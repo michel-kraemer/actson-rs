@@ -19,7 +19,7 @@ tokio = ["dep:tokio"]
 serde_json = ["dep:serde_json"]
 
 [dependencies]
-btoi = "0.4.3"
+btoi = "0.5.0"
 num-traits = "0.2.19"
 serde_json = { version = "1.0.140", features = ["float_roundtrip"], optional = true }
 thiserror = "2.0.12"
