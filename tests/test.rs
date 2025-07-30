@@ -1,5 +1,6 @@
 mod feeder;
 mod prettyprinter;
+#[cfg(feature = "tokio")]
 mod tokio;
 
 use std::fs;
