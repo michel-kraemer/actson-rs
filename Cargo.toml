@@ -19,17 +19,17 @@ tokio = ["dep:tokio"]
 serde_json = ["dep:serde_json"]
 
 [dependencies]
-btoi = "0.4.3"
+btoi = "0.5.0"
 num-traits = "0.2.19"
-serde_json = { version = "1.0.140", features = ["float_roundtrip"], optional = true }
+serde_json = { version = "1.0.141", features = ["float_roundtrip"], optional = true }
 thiserror = "2.0.12"
-tokio = { version = "1.44.2", features = ["io-util", "rt-multi-thread"], optional = true }
+tokio = { version = "1.47.0", features = ["io-util", "rt-multi-thread"], optional = true }
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.7.0"
 dtoa = "1.0.10"
-serde_json = { version = "1.0.140", features = ["float_roundtrip"] }
-tokio = { version = "1.44.2", features = ["fs", "macros", "rt-multi-thread"]}
+serde_json = { version = "1.0.141", features = ["float_roundtrip"] }
+tokio = { version = "1.47.0", features = ["fs", "macros", "rt-multi-thread"]}
 
 [[bench]]
 name = "bench"
