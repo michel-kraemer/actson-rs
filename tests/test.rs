@@ -118,8 +118,7 @@ fn test_pass_with_reset() {
     for i in 1..=3 {
         let json = fs::read_to_string(format!("tests/fixtures/pass{}.txt", i)).unwrap();
         assert_json_eq(&json, &parse_with_parser(&json, &mut parser));
-        parser.reset();
-        parser.feeder.reset();
+        parser.reset_fully();
     }
 }
 
@@ -164,8 +163,7 @@ fn test_fail_with_reset() {
 
         // ignore return value - we accept any error
         parse_fail_with_parser(json.as_bytes(), &mut parser);
-        parser.reset();
-        parser.feeder.reset();
+        parser.reset_fully();
     }
 }
 

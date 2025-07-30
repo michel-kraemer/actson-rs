@@ -3,7 +3,7 @@ use std::{
     str::{from_utf8, Utf8Error},
 };
 
-use crate::{feeder::JsonFeeder, options::JsonParserOptions, JsonEvent};
+use crate::{feeder::JsonFeeder, options::JsonParserOptions, reset::Reset, JsonEvent};
 use btoi::ParseIntegerError;
 use num_traits::{CheckedAdd, CheckedMul, CheckedSub, FromPrimitive, Zero};
 use thiserror::Error;
@@ -248,19 +248,6 @@ where
             putback_character: None,
             high_surrogate_pair: false,
         }
-    }
-
-    /// Reset the parser to the state when it was constructed
-    pub fn reset(&mut self) {
-        self.stack.clear();
-        self.stack.push(MODE_DONE);
-        self.state = GO;
-        self.current_buffer.clear();
-        self.event1 = JsonEvent::NeedMoreInput;
-        self.event2 = JsonEvent::NeedMoreInput;
-        self.parsed_bytes = 0;
-        self.putback_character = None;
-        self.high_surrogate_pair = false;
     }
 
     /// Create a new JSON parser using the given [`JsonFeeder`] and with a
@@ -716,5 +703,36 @@ where
     /// Return the number of bytes parsed so far
     pub fn parsed_bytes(&self) -> usize {
         self.parsed_bytes
+    }
+}
+
+impl<T> Reset for JsonParser<T> {
+    /// Reset the parser to the state it was in when it was constructed
+    ///
+    /// Note that the underlying feeder will not be reset. If you want to reset
+    /// it too, use [`Self::reset_fully`] or call `parser.feeder.reset()`. Both
+    /// require that the feeder implements the [`Reset`] trait.
+    fn reset(&mut self) {
+        self.stack.clear();
+        self.stack.push(MODE_DONE);
+        self.state = GO;
+        self.current_buffer.clear();
+        self.event1 = JsonEvent::NeedMoreInput;
+        self.event2 = JsonEvent::NeedMoreInput;
+        self.parsed_bytes = 0;
+        self.putback_character = None;
+        self.high_surrogate_pair = false;
+    }
+}
+
+impl<T> JsonParser<T>
+where
+    T: Reset,
+{
+    /// Reset the parser (and the underlying feeder) to the state they were in
+    /// when they were constructed
+    pub fn reset_fully(&mut self) {
+        self.reset();
+        self.feeder.reset();
     }
 }

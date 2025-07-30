@@ -213,6 +213,7 @@ pub mod event;
 pub mod feeder;
 pub mod options;
 pub mod parser;
+pub mod reset;
 
 #[cfg(feature = "tokio")]
 pub mod tokio;
