@@ -250,6 +250,19 @@ where
         }
     }
 
+    /// Reset the parser to the state when it was constructed
+    pub fn reset(&mut self) {
+        self.stack.clear();
+        self.stack.push(MODE_DONE);
+        self.state = GO;
+        self.current_buffer.clear();
+        self.event1 = JsonEvent::NeedMoreInput;
+        self.event2 = JsonEvent::NeedMoreInput;
+        self.parsed_bytes = 0;
+        self.putback_character = None;
+        self.high_surrogate_pair = false;
+    }
+
     /// Create a new JSON parser using the given [`JsonFeeder`] and with a
     /// defined maximum stack depth
     #[deprecated(since = "1.1.0", note = "use `new_with_options` instead")]
