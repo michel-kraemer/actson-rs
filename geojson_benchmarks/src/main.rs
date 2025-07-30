@@ -65,14 +65,14 @@ where
     F: FnOnce(&'a str) -> Fut,
     Fut: Future<Output = Result<u64>>,
 {
-    println!("{} ...", name);
+    println!("{name} ...");
 
     let start = Instant::now();
     let len = run(path).await?;
     let elapsed_seconds = start.elapsed().as_secs_f64();
     let throughput_mb_per_sec = len as f64 / 1000.0 / 1000.0 / elapsed_seconds;
 
-    println!("{:.2?}s {:.2} MB/s", elapsed_seconds, throughput_mb_per_sec);
+    println!("{elapsed_seconds:.2?}s {throughput_mb_per_sec:.2} MB/s");
 
     let r = BenchmarkResult {
         name,

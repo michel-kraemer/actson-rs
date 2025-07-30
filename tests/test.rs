@@ -107,7 +107,7 @@ fn assert_json_eq(expected: &str, actual: &str) {
 #[test]
 fn test_pass() {
     for i in 1..=3 {
-        let json = fs::read_to_string(format!("tests/fixtures/pass{}.txt", i)).unwrap();
+        let json = fs::read_to_string(format!("tests/fixtures/pass{i}.txt")).unwrap();
         assert_json_eq(&json, &parse(&json));
     }
 }
@@ -116,7 +116,7 @@ fn test_pass() {
 fn test_pass_with_reset() {
     let mut parser = JsonParser::new(PushJsonFeeder::new());
     for i in 1..=3 {
-        let json = fs::read_to_string(format!("tests/fixtures/pass{}.txt", i)).unwrap();
+        let json = fs::read_to_string(format!("tests/fixtures/pass{i}.txt")).unwrap();
         assert_json_eq(&json, &parse_with_parser(&json, &mut parser));
         parser.reset_fully();
     }
@@ -143,7 +143,7 @@ fn test_fail() {
                 .with_max_depth(16)
                 .build(),
         );
-        let json = fs::read_to_string(format!("tests/fixtures/fail{}.txt", i)).unwrap();
+        let json = fs::read_to_string(format!("tests/fixtures/fail{i}.txt")).unwrap();
 
         // ignore return value - we accept any error
         parse_fail_with_parser(json.as_bytes(), &mut parser);
@@ -159,7 +159,7 @@ fn test_fail_with_reset() {
             .build(),
     );
     for i in 2..=34 {
-        let json = fs::read_to_string(format!("tests/fixtures/fail{}.txt", i)).unwrap();
+        let json = fs::read_to_string(format!("tests/fixtures/fail{i}.txt")).unwrap();
 
         // ignore return value - we accept any error
         parse_fail_with_parser(json.as_bytes(), &mut parser);

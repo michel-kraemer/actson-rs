@@ -10,7 +10,7 @@ fn make_large(json: &str) -> String {
         if large.len() > 1 {
             large.push(',');
         }
-        large.push_str(&format!(r#""{}":"#, i));
+        large.push_str(&format!(r#""{i}":"#));
         large.push_str(json);
     }
     large.push('}');
