@@ -1,3 +1,5 @@
+use crate::reset::Reset;
+
 use super::JsonFeeder;
 
 /// A [`JsonFeeder`] that feeds the [`JsonParser`](crate::JsonParser) from a slice of bytes
@@ -30,6 +32,13 @@ impl JsonFeeder for SliceJsonFeeder<'_> {
             self.pos += 1;
             r
         }
+    }
+}
+
+impl Reset for SliceJsonFeeder<'_> {
+    /// Reset the feeder to the state it was in when it was constructed
+    fn reset(&mut self) {
+        self.pos = 0;
     }
 }
 

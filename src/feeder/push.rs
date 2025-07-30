@@ -3,6 +3,8 @@ use std::collections::VecDeque;
 
 use thiserror::Error;
 
+use crate::reset::Reset;
+
 use super::JsonFeeder;
 
 #[derive(Error, Debug)]
@@ -90,6 +92,14 @@ impl JsonFeeder for PushJsonFeeder {
 
     fn next_input(&mut self) -> Option<u8> {
         self.input.pop_front()
+    }
+}
+
+impl Reset for PushJsonFeeder {
+    /// Reset the feeder to the state it was in when it was constructed
+    fn reset(&mut self) {
+        self.input.clear();
+        self.done = false;
     }
 }
 

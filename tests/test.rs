@@ -1,5 +1,6 @@
 mod feeder;
 mod prettyprinter;
+#[cfg(feature = "tokio")]
 mod tokio;
 
 use std::fs;
@@ -112,6 +113,16 @@ fn test_pass() {
 }
 
 #[test]
+fn test_pass_with_reset() {
+    let mut parser = JsonParser::new(PushJsonFeeder::new());
+    for i in 1..=3 {
+        let json = fs::read_to_string(format!("tests/fixtures/pass{}.txt", i)).unwrap();
+        assert_json_eq(&json, &parse_with_parser(&json, &mut parser));
+        parser.reset_fully();
+    }
+}
+
+#[test]
 fn test_escape_in_key() {
     let json = r#"{"foo\u0000bar": 42}"#;
     assert_json_eq(json, &parse(json));
@@ -125,9 +136,24 @@ fn test_utf16_in_array() {
 
 #[test]
 fn test_fail() {
-    let feeder = PushJsonFeeder::new();
+    for i in 2..=34 {
+        let mut parser = JsonParser::new_with_options(
+            PushJsonFeeder::new(),
+            JsonParserOptionsBuilder::default()
+                .with_max_depth(16)
+                .build(),
+        );
+        let json = fs::read_to_string(format!("tests/fixtures/fail{}.txt", i)).unwrap();
+
+        // ignore return value - we accept any error
+        parse_fail_with_parser(json.as_bytes(), &mut parser);
+    }
+}
+
+#[test]
+fn test_fail_with_reset() {
     let mut parser = JsonParser::new_with_options(
-        feeder,
+        PushJsonFeeder::new(),
         JsonParserOptionsBuilder::default()
             .with_max_depth(16)
             .build(),
@@ -137,6 +163,7 @@ fn test_fail() {
 
         // ignore return value - we accept any error
         parse_fail_with_parser(json.as_bytes(), &mut parser);
+        parser.reset_fully();
     }
 }
 
