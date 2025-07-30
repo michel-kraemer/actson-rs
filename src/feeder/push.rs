@@ -58,6 +58,12 @@ impl PushJsonFeeder {
         n
     }
 
+    /// Reset the feeder to the state when it was constructed
+    pub fn reset(&mut self) {
+        self.input.clear();
+        self.done = false;
+    }
+
     /// Checks if the parser accepts more input at the moment. If it doesn't,
     /// you have to call [`JsonParser::next_event()`](crate::JsonParser::next_event())
     /// until it returns [`JsonEvent::NeedMoreInput`](crate::JsonEvent::NeedMoreInput).
