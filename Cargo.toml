@@ -22,7 +22,7 @@ serde_json = ["dep:serde_json"]
 btoi = "0.5.0"
 num-traits = "0.2.19"
 serde_json = { version = "1.0.141", features = ["float_roundtrip"], optional = true }
-thiserror = "2.0.12"
+thiserror = "2.0.16"
 tokio = { version = "1.47.0", features = ["io-util", "rt-multi-thread"], optional = true }
 
 [dev-dependencies]
