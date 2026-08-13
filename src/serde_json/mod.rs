@@ -105,7 +105,7 @@ pub fn from_slice(v: &[u8]) -> Result<Value, IntoSerdeValueError> {
                     let v = to_value(&event, &parser)?;
                     if let Some(m) = top.as_object_mut() {
                         m.insert(current_key.unwrap(), v);
-                        current_key = None
+                        current_key = None;
                     } else if let Some(a) = top.as_array_mut() {
                         a.push(v);
                     }
